@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 720 535" width="720" height="535"
+     font-family="Times New Roman, serif">
+
+  <!--
+    Standard arrow marker.
+    Right-pointing triangle: tip at (12, 4).
+    refX="12" refY="4"  →  tip placed exactly on line endpoint.
+    orient="auto"       →  SVG rotates to match any line direction.
+    markerUnits="userSpaceOnUse" → fixed 12×8 px size regardless of stroke.
+  -->
+  <defs>
+    <marker id="arr" markerWidth="12" markerHeight="8"
+            refX="12" refY="4"
+            orient="auto" markerUnits="userSpaceOnUse">
+      <polygon points="0,0 12,4 0,8" fill="#333333"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="720" height="535" fill="#FFFFFF"/>
+
+  <!-- ── Title ───────────────────────────────────── -->
+  <text x="360" y="28" text-anchor="middle"
+        font-size="15" font-weight="bold" fill="#111">
+    ML Model Ensemble Overview
+  </text>
+  <text x="360" y="48" text-anchor="middle"
+        font-size="11" fill="#555" font-style="italic">
+    Fig. 2. Three-category ensemble combining Supervised, Unsupervised, and Temporal models (Section III-A.3)
+  </text>
+
+  <!-- ════════════════════════════════════════════════════
+       CATEGORY 1 — SUPERVISED   (x=45, centre=140)
+  ════════════════════════════════════════════════════ -->
+  <rect x="45" y="62" width="190" height="205" rx="7"
+        fill="#EAF3FB" stroke="#1A6AA0" stroke-width="1.8"/>
+  <rect x="45" y="62" width="190" height="26"  rx="7" fill="#1A6AA0"/>
+  <text x="140" y="79" text-anchor="middle"
+        font-size="12" font-weight="bold" fill="#fff">Supervised</text>
+
+  <!-- CatBoost -->
+  <rect x="58"  y="96"  width="164" height="72" rx="5"
+        fill="#fff" stroke="#1A6AA0" stroke-width="1.2"/>
+  <rect x="58"  y="96"  width="164" height="20" rx="5" fill="#4080B8"/>
+  <text x="140" y="110" text-anchor="middle"
+        font-size="10.5" font-weight="bold" fill="#fff">CatBoost</text>
+  <text x="140" y="129" text-anchor="middle" font-size="9.5" fill="#222">Gradient boosting classifier</text>
+  <text x="140" y="143" text-anchor="middle" font-size="9.5" fill="#222">Native categorical handling</text>
+  <text x="140" y="157" text-anchor="middle" font-size="8.5"
+        fill="#555" font-style="italic">output: p&#x2081; &#x2208; [0, 1]</text>
+
+  <!-- LightGBM -->
+  <rect x="58"  y="178" width="164" height="72" rx="5"
+        fill="#fff" stroke="#1A6AA0" stroke-width="1.2"/>
+  <rect x="58"  y="178" width="164" height="20" rx="5" fill="#4080B8"/>
+  <text x="140" y="192" text-anchor="middle"
+        font-size="10.5" font-weight="bold" fill="#fff">LightGBM</text>
+  <text x="140" y="211" text-anchor="middle" font-size="9.5" fill="#222">Leaf-wise gradient boosting</text>
+  <text x="140" y="225" text-anchor="middle" font-size="9.5" fill="#222">Low memory, high throughput</text>
+  <text x="140" y="239" text-anchor="middle" font-size="8.5"
+        fill="#555" font-style="italic">output: p&#x2082; &#x2208; [0, 1]</text>
+
+  <!-- ════════════════════════════════════════════════════
+       CATEGORY 2 — UNSUPERVISED   (x=265, centre=360)
+  ════════════════════════════════════════════════════ -->
+  <rect x="265" y="62" width="190" height="205" rx="7"
+        fill="#FFF8E1" stroke="#B87000" stroke-width="1.8"/>
+  <rect x="265" y="62" width="190" height="26"  rx="7" fill="#B87000"/>
+  <text x="360" y="79" text-anchor="middle"
+        font-size="12" font-weight="bold" fill="#fff">Unsupervised</text>
+
+  <!-- Autoencoder -->
+  <rect x="278" y="96"  width="164" height="72" rx="5"
+        fill="#fff" stroke="#B87000" stroke-width="1.2"/>
+  <rect x="278" y="96"  width="164" height="20" rx="5" fill="#D4920A"/>
+  <text x="360" y="110" text-anchor="middle"
+        font-size="10.5" font-weight="bold" fill="#fff">Autoencoder</text>
+  <text x="360" y="129" text-anchor="middle" font-size="9.5" fill="#222">Reconstruction error scoring</text>
+  <text x="360" y="143" text-anchor="middle" font-size="9.5" fill="#222">Deep anomaly detection</text>
+  <text x="360" y="157" text-anchor="middle" font-size="8.5"
+        fill="#555" font-style="italic">output: p&#x2083; &#x2208; [0, 1]</text>
+
+  <!-- Isolation Forest -->
+  <rect x="278" y="178" width="164" height="72" rx="5"
+        fill="#fff" stroke="#B87000" stroke-width="1.2"/>
+  <rect x="278" y="178" width="164" height="20" rx="5" fill="#D4920A"/>
+  <text x="360" y="192" text-anchor="middle"
+        font-size="10.5" font-weight="bold" fill="#fff">Isolation Forest</text>
+  <text x="360" y="211" text-anchor="middle" font-size="9.5" fill="#222">Tree-based outlier scoring</text>
+  <text x="360" y="225" text-anchor="middle" font-size="9.5" fill="#222">No labeled data required</text>
+  <text x="360" y="239" text-anchor="middle" font-size="8.5"
+        fill="#555" font-style="italic">output: p&#x2084; &#x2208; [0, 1]</text>
+
+  <!-- ════════════════════════════════════════════════════
+       CATEGORY 3 — TEMPORAL   (x=485, centre=580)
+  ════════════════════════════════════════════════════ -->
+  <rect x="485" y="62" width="190" height="205" rx="7"
+        fill="#E8F8F5" stroke="#1A7A6A" stroke-width="1.8"/>
+  <rect x="485" y="62" width="190" height="26"  rx="7" fill="#1A7A6A"/>
+  <text x="580" y="79" text-anchor="middle"
+        font-size="12" font-weight="bold" fill="#fff">Temporal</text>
+
+  <!-- LSTM -->
+  <rect x="498" y="96"  width="164" height="72" rx="5"
+        fill="#fff" stroke="#1A7A6A" stroke-width="1.2"/>
+  <rect x="498" y="96"  width="164" height="20" rx="5" fill="#2A9A8A"/>
+  <text x="580" y="110" text-anchor="middle"
+        font-size="10.5" font-weight="bold" fill="#fff">LSTM</text>
+  <text x="580" y="129" text-anchor="middle" font-size="9.5" fill="#222">Sequential tx patterns</text>
+  <text x="580" y="143" text-anchor="middle" font-size="9.5" fill="#222">Long-range temporal memory</text>
+  <text x="580" y="157" text-anchor="middle" font-size="8.5"
+        fill="#555" font-style="italic">output: p&#x2085; &#x2208; [0, 1]</text>
+
+  <!-- GNN -->
+  <rect x="498" y="178" width="164" height="72" rx="5"
+        fill="#fff" stroke="#1A7A6A" stroke-width="1.2"/>
+  <rect x="498" y="178" width="164" height="20" rx="5" fill="#2A9A8A"/>
+  <text x="580" y="192" text-anchor="middle"
+        font-size="10.5" font-weight="bold" fill="#fff">GNN</text>
+  <text x="580" y="211" text-anchor="middle" font-size="9.5" fill="#222">Graph-based relationships</text>
+  <text x="580" y="225" text-anchor="middle" font-size="9.5" fill="#222">Card-merchant network fraud</text>
+  <text x="580" y="239" text-anchor="middle" font-size="8.5"
+        fill="#555" font-style="italic">output: p&#x2086; &#x2208; [0, 1]</text>
+
+  <!-- ════════════════════════════════════════════════════
+       CONVERGENCE — three drops → horizontal bar → one arrow
+  ════════════════════════════════════════════════════ -->
+
+  <!-- Vertical drop lines from each category box bottom (y=267) to merge bar (y=308) -->
+  <line x1="140" y1="267" x2="140" y2="308" stroke="#555" stroke-width="1.6"/>
+  <line x1="360" y1="267" x2="360" y2="308" stroke="#555" stroke-width="1.6"/>
+  <line x1="580" y1="267" x2="580" y2="308" stroke="#555" stroke-width="1.6"/>
+
+  <!-- Horizontal merge bar -->
+  <line x1="140" y1="308" x2="580" y2="308" stroke="#555" stroke-width="1.6"/>
+
+  <!-- Merge-bar label -->
+  <text x="360" y="303" text-anchor="middle"
+        font-size="9" fill="#555" font-style="italic">
+    probability scores  p&#x2081; &#x2026; p&#x2086;
+  </text>
+
+  <!-- Single arrow down from merge bar to ensemble box top (y=340) -->
+  <line x1="360" y1="308" x2="360" y2="340"
+        stroke="#333" stroke-width="2.5" marker-end="url(#arr)"/>
+
+  <!-- ════════════════════════════════════════════════════
+       ENSEMBLE AGGREGATION BOX   y: 340–415
+  ════════════════════════════════════════════════════ -->
+  <rect x="170" y="340" width="380" height="75" rx="7"
+        fill="#FDF0F8" stroke="#6B2D8B" stroke-width="1.8"/>
+  <rect x="170" y="340" width="380" height="26" rx="7" fill="#6B2D8B"/>
+  <text x="360" y="357" text-anchor="middle"
+        font-size="12" font-weight="bold" fill="#fff">Ensemble Aggregation</text>
+  <text x="360" y="378" text-anchor="middle" font-size="11" fill="#4A004A">
+    Weighted soft voting  ·  Stacking meta-learner
+  </text>
+  <text x="360" y="397" text-anchor="middle" font-size="10.5" fill="#4A004A">
+    &#x15;S = w&#x2081;p&#x2081; + w&#x2082;p&#x2082; + &#x22EF; + w&#x2086;p&#x2086;  (weights via cross-validation)
+  </text>
+
+  <!-- Arrow from ensemble bottom (y=415) to risk score top (y=447) -->
+  <line x1="360" y1="415" x2="360" y2="447"
+        stroke="#333" stroke-width="2.5" marker-end="url(#arr)"/>
+
+  <!-- ════════════════════════════════════════════════════
+       FINAL RISK SCORE   y: 447–517
+  ════════════════════════════════════════════════════ -->
+  <rect x="210" y="447" width="300" height="72" rx="7"
+        fill="#FFF0F0" stroke="#8B1A1A" stroke-width="1.8"/>
+  <rect x="210" y="447" width="300" height="26" rx="7" fill="#8B1A1A"/>
+  <text x="360" y="464" text-anchor="middle"
+        font-size="12" font-weight="bold" fill="#fff">Final Risk Score</text>
+  <text x="360" y="486" text-anchor="middle" font-size="11.5" fill="#5C0000">
+    Score &#x2208; [0.0,&#x2009;1.0]
+  </text>
+  <text x="360" y="506" text-anchor="middle" font-size="10.5" fill="#5C0000">
+    Score &#x2265; &#x3C4; &#x2192; Fraud Alert&#x2003;&#x2022;&#x2003;Score &lt; &#x3C4; &#x2192; Legitimate
+  </text>
+
+</svg>

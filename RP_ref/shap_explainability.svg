@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SHAP Explainability Plot — Section IV
+  Horizontal bar chart: positive SHAP (red) = pushes toward fraud,
+  negative SHAP (blue) = pushes toward legitimate.
+  No arrows. Clean, paper-ready.
+
+  Scale: x range -0.30 to +0.50 (0.80 total), 430 px per unit.
+  Zero line: x = 178 + 0.30*430 = 307
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 560 318" width="560" height="318"
+     font-family="Times New Roman, serif">
+
+  <rect width="560" height="318" fill="#FFFFFF"/>
+
+  <!-- ── Title ─────────────────────────────────────────── -->
+  <text x="280" y="22" text-anchor="middle"
+        font-size="14.5" font-weight="bold" fill="#111">
+    SHAP Feature Importance — Sample Fraud Prediction
+  </text>
+  <text x="280" y="40" text-anchor="middle"
+        font-size="11" fill="#555" font-style="italic">
+    Fig. 5. SHAP values showing per-feature contribution to fraud probability (Section IV)
+  </text>
+
+  <!-- ── Chart background ──────────────────────────────── -->
+  <rect x="178" y="55" width="344" height="196"
+        fill="#FAFAFA" stroke="#CCCCCC" stroke-width="0.8"/>
+
+  <!-- ── Vertical zero line (dashed) ───────────────────── -->
+  <line x1="307" y1="55" x2="307" y2="251"
+        stroke="#888" stroke-width="1.2" stroke-dasharray="4,3"/>
+
+  <!-- ── Light grid lines at ±0.2, ±0.4 ───────────────── -->
+  <line x1="221" y1="55" x2="221" y2="251" stroke="#E8E8E8" stroke-width="0.8"/>
+  <line x1="393" y1="55" x2="393" y2="251" stroke="#E8E8E8" stroke-width="0.8"/>
+  <line x1="479" y1="55" x2="479" y2="251" stroke="#E8E8E8" stroke-width="0.8"/>
+
+  <!--
+    ══════════════════════════════════════════════
+    POSITIVE BARS  (red — increases fraud score)
+    x_start=307, width = value × 430
+    Row y_top: 58, 82, 106, 130, 154, 178
+    ══════════════════════════════════════════════
+  -->
+
+  <!-- tx velocity (1h)   +0.42  w=181 -->
+  <rect x="307" y="58"  width="181" height="17" rx="2"
+        fill="#C0392B" opacity="0.90"/>
+  <text x="172" y="70" text-anchor="end"
+        font-size="9.5" fill="#222">tx velocity (1h)</text>
+  <text x="492" y="70" font-size="9" fill="#C0392B" font-weight="bold">+0.42</text>
+
+  <!-- tx amount          +0.35  w=151 -->
+  <rect x="307" y="82"  width="151" height="17" rx="2"
+        fill="#C0392B" opacity="0.82"/>
+  <text x="172" y="94" text-anchor="end"
+        font-size="9.5" fill="#222">tx amount</text>
+  <text x="462" y="94" font-size="9" fill="#C0392B" font-weight="bold">+0.35</text>
+
+  <!-- dist. from home    +0.28  w=120 -->
+  <rect x="307" y="106" width="120" height="17" rx="2"
+        fill="#C0392B" opacity="0.74"/>
+  <text x="172" y="118" text-anchor="end"
+        font-size="9.5" fill="#222">dist. from home</text>
+  <text x="431" y="118" font-size="9" fill="#C0392B" font-weight="bold">+0.28</text>
+
+  <!-- hour of day (night) +0.22 w=95 -->
+  <rect x="307" y="130" width="95"  height="17" rx="2"
+        fill="#C0392B" opacity="0.66"/>
+  <text x="172" y="142" text-anchor="end"
+        font-size="9.5" fill="#222">hour of day (night)</text>
+  <text x="406" y="142" font-size="9" fill="#C0392B" font-weight="bold">+0.22</text>
+
+  <!-- merchant risk score +0.18  w=77 -->
+  <rect x="307" y="154" width="77"  height="17" rx="2"
+        fill="#C0392B" opacity="0.58"/>
+  <text x="172" y="166" text-anchor="end"
+        font-size="9.5" fill="#222">merchant risk score</text>
+  <text x="388" y="166" font-size="9" fill="#C0392B" font-weight="bold">+0.18</text>
+
+  <!-- card age (new)      +0.15  w=65 -->
+  <rect x="307" y="178" width="65"  height="17" rx="2"
+        fill="#C0392B" opacity="0.52"/>
+  <text x="172" y="190" text-anchor="end"
+        font-size="9.5" fill="#222">card age (new)</text>
+  <text x="376" y="190" font-size="9" fill="#C0392B" font-weight="bold">+0.15</text>
+
+  <!--
+    ══════════════════════════════════════════════
+    NEGATIVE BARS  (blue — reduces fraud score)
+    x_end=307, bar extends left: x_start = 307 - value*430
+    ══════════════════════════════════════════════
+  -->
+
+  <!-- user avg. amount   -0.20  w=86  x_start=221 -->
+  <rect x="221" y="202" width="86"  height="17" rx="2"
+        fill="#2E6DA4" opacity="0.85"/>
+  <text x="172" y="214" text-anchor="end"
+        font-size="9.5" fill="#222">user avg. amount</text>
+  <text x="217" y="214" text-anchor="end"
+        font-size="9" fill="#2E6DA4" font-weight="bold">&#x2212;0.20</text>
+
+  <!-- account tenure     -0.12  w=52  x_start=255 -->
+  <rect x="255" y="226" width="52"  height="17" rx="2"
+        fill="#2E6DA4" opacity="0.72"/>
+  <text x="172" y="238" text-anchor="end"
+        font-size="9.5" fill="#222">account tenure</text>
+  <text x="251" y="238" text-anchor="end"
+        font-size="9" fill="#2E6DA4" font-weight="bold">&#x2212;0.12</text>
+
+  <!-- ── X-axis ────────────────────────────────────────── -->
+  <line x1="178" y1="251" x2="522" y2="251"
+        stroke="#555" stroke-width="1.2"/>
+
+  <!-- Tick marks and labels -->
+  <line x1="178" y1="251" x2="178" y2="256" stroke="#555" stroke-width="1"/>
+  <text x="178" y="267" text-anchor="middle" font-size="8.5" fill="#555">&#x2212;0.3</text>
+
+  <line x1="221" y1="251" x2="221" y2="256" stroke="#555" stroke-width="1"/>
+  <text x="221" y="267" text-anchor="middle" font-size="8.5" fill="#555">&#x2212;0.2</text>
+
+  <line x1="264" y1="251" x2="264" y2="256" stroke="#555" stroke-width="1"/>
+  <text x="264" y="267" text-anchor="middle" font-size="8.5" fill="#555">&#x2212;0.1</text>
+
+  <line x1="307" y1="251" x2="307" y2="256" stroke="#555" stroke-width="1"/>
+  <text x="307" y="267" text-anchor="middle" font-size="8.5" fill="#555">0</text>
+
+  <line x1="393" y1="251" x2="393" y2="256" stroke="#555" stroke-width="1"/>
+  <text x="393" y="267" text-anchor="middle" font-size="8.5" fill="#555">+0.2</text>
+
+  <line x1="479" y1="251" x2="479" y2="256" stroke="#555" stroke-width="1"/>
+  <text x="479" y="267" text-anchor="middle" font-size="8.5" fill="#555">+0.4</text>
+
+  <!-- X-axis title -->
+  <text x="350" y="282" text-anchor="middle"
+        font-size="10" fill="#333">
+    SHAP value (contribution to fraud probability)
+  </text>
+
+  <!-- ── Legend ────────────────────────────────────────── -->
+  <rect x="148" y="296" width="13" height="12" rx="2" fill="#C0392B" opacity="0.85"/>
+  <text x="165" y="306" font-size="9.5" fill="#333">Increases fraud probability</text>
+
+  <rect x="338" y="296" width="13" height="12" rx="2" fill="#2E6DA4" opacity="0.85"/>
+  <text x="355" y="306" font-size="9.5" fill="#333">Decreases fraud probability</text>
+
+</svg>

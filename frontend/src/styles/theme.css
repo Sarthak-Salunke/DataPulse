@@ -1,0 +1,100 @@
+:root {
+  /* ── Background Scale ── */
+  --bg-void: #020810;
+  --bg-deep: #050E1C;
+  --bg-surface: #0A1828;
+  --bg-elevated: #0F2038;
+  --bg-card: #0D1E34;
+
+  /* ── Accent: Cyber Cyan ── */
+  --cyan: #00CFFF;
+  --cyan-dim: rgba(0, 207, 255, 0.12);
+  --cyan-border: rgba(0, 207, 255, 0.22);
+  --cyan-glow: rgba(0, 207, 255, 0.08);
+
+  /* ── Semantic: Fraud ── */
+  --fraud: #FF2D55;
+  --fraud-dim: rgba(255, 45, 85, 0.12);
+  --fraud-border: rgba(255, 45, 85, 0.3);
+
+  /* ── Semantic: Safe ── */
+  --safe: #00E87A;
+  --safe-dim: rgba(0, 232, 122, 0.1);
+
+  /* ── Semantic: Warning ── */
+  --amber: #FFB319;
+  --amber-dim: rgba(255, 179, 25, 0.12);
+
+  /* ── Text ── */
+  --text-primary: #C8DEFF;
+  --text-secondary: #5D82A8;
+  --text-muted: #2E4A6A;
+  --text-bright: #E8F4FF;
+
+  /* ── Borders ── */
+  --border: rgba(0, 207, 255, 0.12);
+  --border-strong: rgba(0, 207, 255, 0.25);
+
+  /* ── Typography ── */
+  --font-display: 'Poppins', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-body: 'Poppins', sans-serif;
+  --font-label: 'Poppins', sans-serif;
+
+  /* ── Radius ── */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+
+  /* ── Backward-compat aliases ── */
+  --bg-color-dark: var(--bg-void);
+  --sidebar-bg-dark: var(--bg-deep);
+  --panel-bg-dark: rgba(10, 24, 40, 0.85);
+  --panel-border-dark: var(--border);
+  --border-color-dark: var(--border);
+  --text-primary-dark: var(--text-bright);
+  --text-secondary-dark: var(--text-secondary);
+  --accent-primary: var(--cyan);
+  --accent-text: var(--cyan);
+}
+
+.light {
+  --bg-void: #F8FAFC;
+  --bg-deep: #F0F4F8;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F8FAFC;
+  --bg-card: #FFFFFF;
+
+  --text-primary: #334155;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+  --text-bright: #0F172A;
+
+  --border: rgba(0, 0, 0, 0.1);
+  --border-strong: rgba(0, 0, 0, 0.2);
+
+  --bg-color-dark: var(--bg-void);
+  --sidebar-bg-dark: var(--bg-deep);
+  --panel-bg-dark: rgba(255, 255, 255, 0.9);
+  --panel-border-dark: rgba(0, 0, 0, 0.08);
+  --border-color-dark: var(--border);
+  --text-primary-dark: var(--text-bright);
+  --text-secondary-dark: var(--text-secondary);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-deep);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cyan);
+}

@@ -1,0 +1,4 @@
+Model,ROC-AUC,PR-AUC,F1-Score,Recall,Precision
+Baseline SVM,1.0,1.0,1.0,1.0,1.0
+Optimized SVM,1.0,1.0,0.9949748743718593,0.99,1.0
+Calibrated SVM,1.0,1.0,0.98989898989899,0.98,1.0

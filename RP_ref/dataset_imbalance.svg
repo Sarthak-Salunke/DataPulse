@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Dataset Class Imbalance — Section III-B
+  Log-scale grouped bar chart: Non-Fraud vs Fraud per dataset.
+  No arrows. Clear labels. Paper-ready.
+
+  Y-axis: log10 scale, range 10^2 (100) to 10^7 (10 M)
+  Bar top formula: y_top = 310 - 50 * (log10(count) - 2)
+
+  Counts used:
+    IEEE-CIS     Non-Fraud 569,877  Fraud  20,663  Rate 3.500%
+    European CC  Non-Fraud 284,315  Fraud     492  Rate 0.172%
+    PaySim       Non-Fraud 6,354,407 Fraud   8,213  Rate 0.130%
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 680 430" width="680" height="430"
+     font-family="Times New Roman, serif">
+
+  <rect width="680" height="430" fill="#FFFFFF"/>
+
+  <!-- ── Title ───────────────────────────────────────── -->
+  <text x="340" y="28" text-anchor="middle"
+        font-size="15" font-weight="bold" fill="#111">
+    Dataset Class Imbalance: Fraud vs. Non-Fraud
+  </text>
+  <text x="340" y="48" text-anchor="middle"
+        font-size="11" fill="#555" font-style="italic">
+    Fig. 3. Sample counts per class across three benchmark datasets (Section III-B)
+  </text>
+
+  <!-- ── Chart background ───────────────────────────── -->
+  <rect x="70" y="60" width="530" height="250"
+        fill="#FAFAFA" stroke="#CCCCCC" stroke-width="0.8"/>
+
+  <!-- ── Horizontal grid lines + Y-axis tick labels ─── -->
+  <!-- 10M  y=60  -->
+  <line x1="70" y1="60"  x2="600" y2="60"  stroke="#DDDDDD" stroke-width="1"/>
+  <text x="62" y="64"  text-anchor="end" font-size="9.5" fill="#555">10M</text>
+  <!-- 1M   y=110 -->
+  <line x1="70" y1="110" x2="600" y2="110" stroke="#DDDDDD" stroke-width="1"/>
+  <text x="62" y="114" text-anchor="end" font-size="9.5" fill="#555">1M</text>
+  <!-- 100K y=160 -->
+  <line x1="70" y1="160" x2="600" y2="160" stroke="#DDDDDD" stroke-width="1"/>
+  <text x="62" y="164" text-anchor="end" font-size="9.5" fill="#555">100K</text>
+  <!-- 10K  y=210 -->
+  <line x1="70" y1="210" x2="600" y2="210" stroke="#DDDDDD" stroke-width="1"/>
+  <text x="62" y="214" text-anchor="end" font-size="9.5" fill="#555">10K</text>
+  <!-- 1K   y=260 -->
+  <line x1="70" y1="260" x2="600" y2="260" stroke="#DDDDDD" stroke-width="1"/>
+  <text x="62" y="264" text-anchor="end" font-size="9.5" fill="#555">1K</text>
+  <!-- 100  y=310 (baseline) -->
+  <line x1="70" y1="310" x2="600" y2="310" stroke="#AAAAAA" stroke-width="1"/>
+  <text x="62" y="314" text-anchor="end" font-size="9.5" fill="#555">100</text>
+
+  <!-- ── Y-axis label ────────────────────────────────── -->
+  <text transform="translate(18,185) rotate(-90)"
+        text-anchor="middle" font-size="11" fill="#333">
+    Sample Count (log&#x2081;&#x2080; scale)
+  </text>
+
+  <!-- ── Axes ───────────────────────────────────────── -->
+  <line x1="70" y1="60"  x2="70"  y2="310" stroke="#555" stroke-width="1.2"/>
+  <line x1="70" y1="310" x2="600" y2="310" stroke="#555" stroke-width="1.2"/>
+
+  <!-- ════════════════════════════════════════════════
+       GROUP 1 — IEEE-CIS   group centre x=158
+       Non-Fraud: 569,877  log=5.756  h=187.8  top_y=122
+       Fraud:      20,663  log=4.315  h=115.8  top_y=194
+  ════════════════════════════════════════════════ -->
+  <!-- Non-Fraud bar -->
+  <rect x="104" y="122" width="50" height="188" rx="3"
+        fill="#2E6DA4" opacity="0.88"/>
+  <!-- Fraud bar -->
+  <rect x="162" y="194" width="50" height="116" rx="3"
+        fill="#C0392B" opacity="0.92"/>
+  <!-- Count labels above bars -->
+  <text x="129" y="118" text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#2E6DA4">570K</text>
+  <text x="187" y="190" text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#C0392B">20.7K</text>
+
+  <!-- ════════════════════════════════════════════════
+       GROUP 2 — European CC   group centre x=334
+       Non-Fraud: 284,315  log=5.454  h=172.7  top_y=137
+       Fraud:         492  log=2.692  h= 34.6  top_y=275
+  ════════════════════════════════════════════════ -->
+  <rect x="280" y="137" width="50" height="173" rx="3"
+        fill="#2E6DA4" opacity="0.88"/>
+  <rect x="338" y="275" width="50" height="35"  rx="3"
+        fill="#C0392B" opacity="0.92"/>
+  <text x="305" y="133" text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#2E6DA4">284K</text>
+  <text x="363" y="271" text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#C0392B">492</text>
+
+  <!-- ════════════════════════════════════════════════
+       GROUP 3 — PaySim   group centre x=510
+       Non-Fraud: 6,354,407  log=6.803  h=240.2  top_y=70
+       Fraud:         8,213  log=3.915  h= 95.8  top_y=214
+  ════════════════════════════════════════════════ -->
+  <rect x="456" y="70"  width="50" height="240" rx="3"
+        fill="#2E6DA4" opacity="0.88"/>
+  <rect x="514" y="214" width="50" height="96"  rx="3"
+        fill="#C0392B" opacity="0.92"/>
+  <text x="481" y="66"  text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#2E6DA4">6.35M</text>
+  <text x="539" y="210" text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#C0392B">8.2K</text>
+
+  <!-- ── X-axis dataset labels ──────────────────────── -->
+  <text x="158" y="330" text-anchor="middle"
+        font-size="12" font-weight="bold" fill="#111">IEEE-CIS</text>
+  <text x="334" y="330" text-anchor="middle"
+        font-size="12" font-weight="bold" fill="#111">European CC</text>
+  <text x="510" y="330" text-anchor="middle"
+        font-size="12" font-weight="bold" fill="#111">PaySim</text>
+
+  <!-- ── Fraud rate below dataset name ──────────────── -->
+  <text x="158" y="348" text-anchor="middle"
+        font-size="10.5" fill="#C0392B">Fraud Rate: 3.500%</text>
+  <text x="334" y="348" text-anchor="middle"
+        font-size="10.5" fill="#C0392B">Fraud Rate: 0.172%</text>
+  <text x="510" y="348" text-anchor="middle"
+        font-size="10.5" fill="#C0392B">Fraud Rate: 0.130%</text>
+
+  <!-- ── Imbalance ratio ─────────────────────────────── -->
+  <text x="158" y="364" text-anchor="middle"
+        font-size="9.5" fill="#777">(1 : 27.6 ratio)</text>
+  <text x="334" y="364" text-anchor="middle"
+        font-size="9.5" fill="#777">(1 : 578 ratio)</text>
+  <text x="510" y="364" text-anchor="middle"
+        font-size="9.5" fill="#777">(1 : 773 ratio)</text>
+
+  <!-- ── Legend ─────────────────────────────────────── -->
+  <rect x="214" y="381" width="15" height="13" rx="2"
+        fill="#2E6DA4" opacity="0.88"/>
+  <text x="234" y="393" font-size="11" fill="#333">Non-Fraud (Legitimate)</text>
+
+  <rect x="400" y="381" width="15" height="13" rx="2"
+        fill="#C0392B" opacity="0.92"/>
+  <text x="420" y="393" font-size="11" fill="#333">Fraud</text>
+
+  <!-- ── Footnote ───────────────────────────────────── -->
+  <text x="340" y="416" text-anchor="middle"
+        font-size="9" fill="#999" font-style="italic">
+    Y-axis: log&#x2081;&#x2080; scale. Severe imbalance motivates SMOTE oversampling and threshold-calibrated classifiers.
+  </text>
+
+</svg>

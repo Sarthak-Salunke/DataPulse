@@ -1,0 +1,19 @@
+ml/training/Neural Network/data/raw/dataset.csv
+
+# Build outputs
+frontend/dist/
+pipeline/kafka-producer/target/
+
+# Python
+backend/venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Node
+node_modules/
+
+# Env
+.env
+
+.claude

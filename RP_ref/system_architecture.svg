@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 660 680" width="660" height="680"
+     font-family="Times New Roman, serif">
+
+  <!-- ── Arrow markers ── -->
+  <!--
+    Standard approach: right-pointing triangle, tip at (12, 4).
+    refX="12" refY="4" places the tip exactly on the line endpoint.
+    orient="auto" rotates the marker to match any line direction
+    (down, left, up, right — all work automatically).
+  -->
+  <defs>
+    <marker id="dn" markerWidth="12" markerHeight="8"
+            refX="12" refY="4"
+            orient="auto" markerUnits="userSpaceOnUse">
+      <polygon points="0,0 12,4 0,8" fill="#333333"/>
+    </marker>
+    <marker id="fb" markerWidth="12" markerHeight="8"
+            refX="12" refY="4"
+            orient="auto" markerUnits="userSpaceOnUse">
+      <polygon points="0,0 12,4 0,8" fill="#B84010"/>
+    </marker>
+  </defs>
+
+  <!-- ── Background ── -->
+  <rect width="660" height="680" fill="#FFFFFF"/>
+
+  <!-- ════════════════════════════════════════════
+       TITLE
+  ════════════════════════════════════════════ -->
+  <text x="330" y="30" text-anchor="middle"
+        font-size="15" font-weight="bold" fill="#111">
+    DataPulse: Real-Time Fraud Detection System
+  </text>
+  <text x="330" y="50" text-anchor="middle"
+        font-size="11" fill="#555" font-style="italic">
+    Fig. 1. Five-layer streaming pipeline architecture (Section III-A)
+  </text>
+
+  <!-- ════════════════════════════════════════════
+       LAYER I — DATA SOURCES   y: 68–148
+  ════════════════════════════════════════════ -->
+  <rect x="50" y="68" width="560" height="80" rx="7"
+        fill="#EAF3FB" stroke="#2E5FA3" stroke-width="1.8"/>
+  <!-- header band -->
+  <rect x="50" y="68" width="560" height="26" rx="7"
+        fill="#2E5FA3"/>
+  <!-- header text -->
+  <text x="330" y="86" text-anchor="middle"
+        font-size="13" font-weight="bold" fill="#FFFFFF" letter-spacing="0.5">
+    LAYER I — DATA SOURCES
+  </text>
+  <!-- body lines -->
+  <text x="330" y="112" text-anchor="middle"
+        font-size="11.5" fill="#1A3A5C">
+    Credit Card Transactions (IEEE-CIS, ~284 K records)
+  </text>
+  <text x="330" y="132" text-anchor="middle"
+        font-size="11.5" fill="#1A3A5C">
+    Customer Profiles  ·  Merchant / Geo Data  ·  Scala Kafka Producer
+  </text>
+
+  <!-- ── Arrow I → II ── -->
+  <line x1="330" y1="148" x2="330" y2="190"
+        stroke="#333" stroke-width="2.5" marker-end="url(#dn)"/>
+  <text x="343" y="173" font-size="10" fill="#444" font-style="italic">Produce</text>
+
+  <!-- ════════════════════════════════════════════
+       LAYER II — KAFKA INGESTION   y: 190–270
+  ════════════════════════════════════════════ -->
+  <rect x="50" y="190" width="560" height="80" rx="7"
+        fill="#FFF8E1" stroke="#B87000" stroke-width="1.8"/>
+  <rect x="50" y="190" width="560" height="26" rx="7"
+        fill="#B87000"/>
+  <text x="330" y="208" text-anchor="middle"
+        font-size="13" font-weight="bold" fill="#FFFFFF" letter-spacing="0.5">
+    LAYER II — KAFKA INGESTION
+  </text>
+  <text x="330" y="234" text-anchor="middle"
+        font-size="11.5" fill="#5C3A00">
+    Apache Kafka Broker Cluster
+  </text>
+  <text x="330" y="254" text-anchor="middle"
+        font-size="11.5" fill="#5C3A00">
+    Topics:  transactions  ·  fraud-alerts  ·  enriched-events
+  </text>
+
+  <!-- ── Arrow II → III ── -->
+  <line x1="330" y1="270" x2="330" y2="312"
+        stroke="#333" stroke-width="2.5" marker-end="url(#dn)"/>
+  <text x="343" y="295" font-size="10" fill="#444" font-style="italic">Consume</text>
+
+  <!-- ════════════════════════════════════════════
+       LAYER III — STREAM PROCESSING   y: 312–392
+  ════════════════════════════════════════════ -->
+  <rect x="50" y="312" width="560" height="80" rx="7"
+        fill="#F0FBF0" stroke="#2E7A2E" stroke-width="1.8"/>
+  <rect x="50" y="312" width="560" height="26" rx="7"
+        fill="#2E7A2E"/>
+  <text x="330" y="330" text-anchor="middle"
+        font-size="13" font-weight="bold" fill="#FFFFFF" letter-spacing="0.5">
+    LAYER III — STREAM PROCESSING
+  </text>
+  <text x="330" y="356" text-anchor="middle"
+        font-size="11.5" fill="#1A4A1A">
+    Apache Spark Streaming  ·  Feature Engineering  ·  Preprocessing / SMOTE
+  </text>
+  <text x="330" y="376" text-anchor="middle"
+        font-size="11.5" fill="#1A4A1A">
+    Windowed Aggregations  ·  PostgreSQL / TimescaleDB (persistence)
+  </text>
+
+  <!-- ── Arrow III → IV ── -->
+  <line x1="330" y1="392" x2="330" y2="434"
+        stroke="#333" stroke-width="2.5" marker-end="url(#dn)"/>
+  <text x="343" y="417" font-size="10" fill="#444" font-style="italic">Score</text>
+
+  <!-- ════════════════════════════════════════════
+       LAYER IV — ML DETECTION   y: 434–514
+  ════════════════════════════════════════════ -->
+  <rect x="50" y="434" width="560" height="80" rx="7"
+        fill="#FDF0F8" stroke="#6B2D8B" stroke-width="1.8"/>
+  <rect x="50" y="434" width="560" height="26" rx="7"
+        fill="#6B2D8B"/>
+  <text x="330" y="452" text-anchor="middle"
+        font-size="13" font-weight="bold" fill="#FFFFFF" letter-spacing="0.5">
+    LAYER IV — ML DETECTION MODELS
+  </text>
+  <text x="330" y="476" text-anchor="middle"
+        font-size="11.5" fill="#4A004A">
+    Logistic Regression  ·  Random Forest  ·  Spark ML Pipeline
+  </text>
+  <text x="330" y="496" text-anchor="middle"
+        font-size="11.5" fill="#4A004A">
+    FastAPI Server  (REST + WebSocket · JWT Auth · async inference)
+  </text>
+
+  <!-- ── Arrow IV → V ── -->
+  <line x1="330" y1="514" x2="330" y2="556"
+        stroke="#333" stroke-width="2.5" marker-end="url(#dn)"/>
+  <text x="343" y="539" font-size="10" fill="#444" font-style="italic">Serve</text>
+
+  <!-- ════════════════════════════════════════════
+       LAYER V — VISUALIZATION   y: 556–636
+  ════════════════════════════════════════════ -->
+  <rect x="50" y="556" width="560" height="80" rx="7"
+        fill="#FFF5F0" stroke="#B84010" stroke-width="1.8"/>
+  <rect x="50" y="556" width="560" height="26" rx="7"
+        fill="#B84010"/>
+  <text x="330" y="574" text-anchor="middle"
+        font-size="13" font-weight="bold" fill="#FFFFFF" letter-spacing="0.5">
+    LAYER V — VISUALIZATION &amp; ALERTING
+  </text>
+  <text x="330" y="598" text-anchor="middle"
+        font-size="11.5" fill="#5C1A00">
+    React + Tailwind Dashboard  ·  Grafana Monitoring  ·  Real-Time Alerts
+  </text>
+  <text x="330" y="618" text-anchor="middle"
+        font-size="11.5" fill="#5C1A00">
+    WebSocket push  ·  Analyst Feedback Loop (HITL)  ·  Model drift detection
+  </text>
+
+  <!-- ════════════════════════════════════════════
+       FEEDBACK LOOP — right outer spine
+       Goes: Layer V right edge → right margin → up → Layer I right edge
+  ════════════════════════════════════════════ -->
+
+  <!-- horizontal leg out from Layer V -->
+  <line x1="610" y1="596" x2="638" y2="596"
+        stroke="#B84010" stroke-width="1.8" stroke-dasharray="6,4"/>
+  <!-- vertical leg up -->
+  <line x1="638" y1="596" x2="638" y2="108"
+        stroke="#B84010" stroke-width="1.8" stroke-dasharray="6,4"/>
+  <!-- horizontal leg back in — tip lands on Layer I right edge (x=610) -->
+  <line x1="638" y1="108" x2="610" y2="108"
+        stroke="#B84010" stroke-width="1.8" stroke-dasharray="6,4"
+        marker-end="url(#fb)"/>
+
+  <!-- Spine label -->
+  <text transform="translate(654,390) rotate(90)"
+        text-anchor="middle" font-size="9.5"
+        fill="#B84010" font-style="italic">
+    Re-training feedback (new labeled data)
+  </text>
+
+</svg>

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Data Pipeline / Stream Processing Flow  —  Section III-A, Parts 1-2
+  Horizontal sequence: Transaction → Kafka → Flink → Features → ML → Alert
+  Arrow marker: right-pointing triangle, tip at (12,4), refX=12, orient=auto.
+  Same validated marker definition used across all RP_ref figures.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 820 295" width="820" height="295"
+     font-family="Times New Roman, serif">
+
+  <!-- ── Arrow marker — ONE definition, correct for every direction ── -->
+  <defs>
+    <!--
+      Right-pointing triangle: tip at (12, 4).
+      refX="12" → tip placed exactly on the line endpoint.
+      orient="auto" → SVG rotates automatically:
+        rightward line  → tip points right  ✓
+        downward line   → tip points down   ✓
+    -->
+    <marker id="arr" markerWidth="12" markerHeight="8"
+            refX="12" refY="4"
+            orient="auto" markerUnits="userSpaceOnUse">
+      <polygon points="0,0 12,4 0,8" fill="#333333"/>
+    </marker>
+    <marker id="arrD" markerWidth="12" markerHeight="8"
+            refX="12" refY="4"
+            orient="auto" markerUnits="userSpaceOnUse">
+      <polygon points="0,0 12,4 0,8" fill="#666666"/>
+    </marker>
+  </defs>
+
+  <rect width="820" height="295" fill="#FFFFFF"/>
+
+  <!-- ── Title ─────────────────────────────────────────────── -->
+  <text x="410" y="22" text-anchor="middle"
+        font-size="14.5" font-weight="bold" fill="#111">
+    Transaction Event Flow: Ingestion &#x2192; Stream Processing &#x2192; ML Scoring &#x2192; Alert
+  </text>
+  <text x="410" y="40" text-anchor="middle"
+        font-size="11" fill="#555" font-style="italic">
+    Fig. 4. Real-time fraud detection pipeline sequence (Section III-A, Parts 1&#x2013;2)
+  </text>
+
+  <!--
+    ══════════════════════════════════════════════════════════════
+    STAGE BOXES
+    Width=90  Height=88  Gap=40  y_top=56  y_bottom=144  y_center=100
+    Centres x: 85, 215, 345, 475, 605, 735
+    Box left edges: 40, 170, 300, 430, 560, 690
+    ══════════════════════════════════════════════════════════════
+  -->
+
+  <!-- ① Transaction Event  x: 40–130 -->
+  <rect x="40"  y="56" width="90" height="88" rx="6"
+        fill="#EAF3FB" stroke="#1A6AA0" stroke-width="1.6"/>
+  <rect x="40"  y="56" width="90" height="24" rx="6" fill="#1A6AA0"/>
+  <text x="85"  y="72" text-anchor="middle"
+        font-size="9.5" font-weight="bold" fill="#fff">&#x2460; Transaction</text>
+  <text x="85"  y="92"  text-anchor="middle" font-size="8.5" fill="#222">Raw event record</text>
+  <text x="85"  y="106" text-anchor="middle" font-size="8.5" fill="#222">amount &#xB7; merchant</text>
+  <text x="85"  y="120" text-anchor="middle" font-size="8.5" fill="#222">timestamp &#xB7; geo</text>
+  <text x="85"  y="136" text-anchor="middle" font-size="8"   fill="#666" font-style="italic">Scala producer</text>
+
+  <!-- ② Kafka Broker  x: 170–260 -->
+  <rect x="170" y="56" width="90" height="88" rx="6"
+        fill="#FFF8E1" stroke="#B87000" stroke-width="1.6"/>
+  <rect x="170" y="56" width="90" height="24" rx="6" fill="#B87000"/>
+  <text x="215" y="72" text-anchor="middle"
+        font-size="9.5" font-weight="bold" fill="#fff">&#x2461; Kafka Broker</text>
+  <text x="215" y="92"  text-anchor="middle" font-size="8.5" fill="#222">3 partitioned topics</text>
+  <text x="215" y="106" text-anchor="middle" font-size="8.5" fill="#222">transactions</text>
+  <text x="215" y="120" text-anchor="middle" font-size="8.5" fill="#222">fraud-alerts</text>
+  <text x="215" y="136" text-anchor="middle" font-size="8"   fill="#666" font-style="italic">offset-tracked</text>
+
+  <!-- ③ Flink Engine  x: 300–390 -->
+  <rect x="300" y="56" width="90" height="88" rx="6"
+        fill="#F0FBF0" stroke="#2E7A2E" stroke-width="1.6"/>
+  <rect x="300" y="56" width="90" height="24" rx="6" fill="#2E7A2E"/>
+  <text x="345" y="72" text-anchor="middle"
+        font-size="9.5" font-weight="bold" fill="#fff">&#x2462; Flink Engine</text>
+  <text x="345" y="92"  text-anchor="middle" font-size="8.5" fill="#222">Sliding window</text>
+  <text x="345" y="106" text-anchor="middle" font-size="8.5" fill="#222">5-min intervals</text>
+  <text x="345" y="120" text-anchor="middle" font-size="8.5" fill="#222">windowed stats</text>
+  <text x="345" y="136" text-anchor="middle" font-size="8"   fill="#666" font-style="italic">micro-batch</text>
+
+  <!-- ④ Feature Engineering  x: 430–520 -->
+  <rect x="430" y="56" width="90" height="88" rx="6"
+        fill="#E8F8F5" stroke="#1A7A6A" stroke-width="1.6"/>
+  <rect x="430" y="56" width="90" height="24" rx="6" fill="#1A7A6A"/>
+  <text x="475" y="72" text-anchor="middle"
+        font-size="9.5" font-weight="bold" fill="#fff">&#x2463; Feature Eng.</text>
+  <text x="475" y="92"  text-anchor="middle" font-size="8.5" fill="#222">30 features</text>
+  <text x="475" y="106" text-anchor="middle" font-size="8.5" fill="#222">temporal &#xB7; geo</text>
+  <text x="475" y="120" text-anchor="middle" font-size="8.5" fill="#222">behavioral &#xB7; stats</text>
+  <text x="475" y="136" text-anchor="middle" font-size="8"   fill="#666" font-style="italic">scaled + normalised</text>
+
+  <!-- ⑤ ML Scoring  x: 560–650 -->
+  <rect x="560" y="56" width="90" height="88" rx="6"
+        fill="#FDF0F8" stroke="#6B2D8B" stroke-width="1.6"/>
+  <rect x="560" y="56" width="90" height="24" rx="6" fill="#6B2D8B"/>
+  <text x="605" y="72" text-anchor="middle"
+        font-size="9.5" font-weight="bold" fill="#fff">&#x2464; ML Scoring</text>
+  <text x="605" y="92"  text-anchor="middle" font-size="8.5" fill="#222">CatBoost, LGBM</text>
+  <text x="605" y="106" text-anchor="middle" font-size="8.5" fill="#222">LSTM, IsoForest</text>
+  <text x="605" y="120" text-anchor="middle" font-size="8.5" fill="#222">ensemble vote</text>
+  <text x="605" y="136" text-anchor="middle" font-size="8"   fill="#666" font-style="italic">score &#x2208; [0, 1]</text>
+
+  <!-- ⑥ Risk Decision  x: 690–780 -->
+  <rect x="690" y="56" width="90" height="88" rx="6"
+        fill="#FFF5F0" stroke="#B84010" stroke-width="1.6"/>
+  <rect x="690" y="56" width="90" height="24" rx="6" fill="#B84010"/>
+  <text x="735" y="72" text-anchor="middle"
+        font-size="9.5" font-weight="bold" fill="#fff">&#x2465; Risk Decision</text>
+  <text x="735" y="92"  text-anchor="middle" font-size="8.5" fill="#222">score &#x2265; &#x3C4; &#x2192; Alert</text>
+  <text x="735" y="106" text-anchor="middle" font-size="8.5" fill="#222">WebSocket push</text>
+  <text x="735" y="120" text-anchor="middle" font-size="8.5" fill="#222">Kafka alert topic</text>
+  <text x="735" y="136" text-anchor="middle" font-size="8"   fill="#666" font-style="italic">latency &lt; 200 ms</text>
+
+  <!-- ══════════════════════════════════════════════════════════
+       MAIN HORIZONTAL ARROWS  (y=100, right-pointing)
+       x1 = right edge of box,  x2 = left edge of next box
+  ══════════════════════════════════════════════════════════ -->
+
+  <!-- ①→② -->
+  <line x1="130" y1="100" x2="170" y2="100"
+        stroke="#333" stroke-width="2.2" marker-end="url(#arr)"/>
+  <text x="150" y="116" text-anchor="middle"
+        font-size="8" fill="#444" font-style="italic">publish</text>
+
+  <!-- ②→③ -->
+  <line x1="260" y1="100" x2="300" y2="100"
+        stroke="#333" stroke-width="2.2" marker-end="url(#arr)"/>
+  <text x="280" y="116" text-anchor="middle"
+        font-size="8" fill="#444" font-style="italic">consume</text>
+
+  <!-- ③→④ -->
+  <line x1="390" y1="100" x2="430" y2="100"
+        stroke="#333" stroke-width="2.2" marker-end="url(#arr)"/>
+  <text x="410" y="116" text-anchor="middle"
+        font-size="8" fill="#444" font-style="italic">events</text>
+
+  <!-- ④→⑤ -->
+  <line x1="520" y1="100" x2="560" y2="100"
+        stroke="#333" stroke-width="2.2" marker-end="url(#arr)"/>
+  <text x="540" y="116" text-anchor="middle"
+        font-size="8" fill="#444" font-style="italic">feature vec.</text>
+
+  <!-- ⑤→⑥ -->
+  <line x1="650" y1="100" x2="690" y2="100"
+        stroke="#333" stroke-width="2.2" marker-end="url(#arr)"/>
+  <text x="670" y="116" text-anchor="middle"
+        font-size="8" fill="#444" font-style="italic">risk score</text>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECONDARY PATHS (vertical, dashed, downward)
+  ══════════════════════════════════════════════════════════ -->
+
+  <!-- From ③ Flink → PostgreSQL/TimescaleDB (persistence) -->
+  <line x1="345" y1="144" x2="345" y2="198"
+        stroke="#666" stroke-width="1.4"
+        stroke-dasharray="4,3" marker-end="url(#arrD)"/>
+  <text x="360" y="176" font-size="8" fill="#666" font-style="italic">persist</text>
+
+  <rect x="293" y="202" width="104" height="46" rx="5"
+        fill="#F5F5FF" stroke="#3A3A8A" stroke-width="1.3"/>
+  <rect x="293" y="202" width="104" height="19" rx="5" fill="#3A3A8A"/>
+  <text x="345" y="215" text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#fff">PostgreSQL</text>
+  <text x="345" y="231" text-anchor="middle"
+        font-size="8.5" fill="#222">TimescaleDB store</text>
+  <text x="345" y="242" text-anchor="middle"
+        font-size="8" fill="#666" font-style="italic">enriched records</text>
+
+  <!-- From ⑥ Risk Decision → Outputs (dashboard + alerts) -->
+  <line x1="735" y1="144" x2="735" y2="198"
+        stroke="#B84010" stroke-width="1.4"
+        stroke-dasharray="4,3" marker-end="url(#arrD)"/>
+  <text x="750" y="176" font-size="8" fill="#B84010" font-style="italic">alert</text>
+
+  <rect x="680" y="202" width="110" height="46" rx="5"
+        fill="#FFF5F0" stroke="#B84010" stroke-width="1.3"/>
+  <rect x="680" y="202" width="110" height="19" rx="5" fill="#B84010"/>
+  <text x="735" y="215" text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#fff">Outputs</text>
+  <text x="735" y="231" text-anchor="middle"
+        font-size="8.5" fill="#222">React Dashboard</text>
+  <text x="735" y="242" text-anchor="middle"
+        font-size="8" fill="#666" font-style="italic">Grafana &#xB7; alert topic</text>
+
+  <!-- ── Footer ─────────────────────────────────────────────── -->
+  <line x1="40" y1="264" x2="780" y2="264"
+        stroke="#DDDDDD" stroke-width="0.8"/>
+  <text x="410" y="279" text-anchor="middle"
+        font-size="9.5" fill="#555" font-style="italic">
+    Window size: 5 min (sliding) &#xB7; Feature vector: 30 dimensions &#xB7;
+    End-to-end event latency: &lt; 200 ms
+  </text>
+
+</svg>

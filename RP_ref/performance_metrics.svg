@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Performance Metrics Comparison — Section IV
+  Grouped vertical bar chart: 4 metric groups × 5 models.
+  No arrows. Y-axis 0.0–1.0. Grid lines at 0.2 intervals.
+
+  Chart: x=55→483 (428px), y=62→272 (210px). Scale: 210px per unit.
+  Groups (left edge): Precision=55, Recall=171, F1=287, ROC-AUC=403
+  Each group = 5 bars (w=16) + 4 inner gaps (3px) = 92px wide.
+  Between groups: 24px.
+
+  Values (expected on IEEE-CIS test set):
+    LR        0.72  0.68  0.70  0.85
+    RF        0.84  0.79  0.81  0.92
+    CatBoost  0.91  0.87  0.89  0.97
+    LightGBM  0.89  0.85  0.87  0.96
+    Ensemble  0.93  0.91  0.92  0.98
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 560 372" width="560" height="372"
+     font-family="Times New Roman, serif">
+
+  <rect width="560" height="372" fill="#FFFFFF"/>
+
+  <!-- ── Title ─────────────────────────────────────────── -->
+  <text x="280" y="22" text-anchor="middle"
+        font-size="14.5" font-weight="bold" fill="#111">
+    Model Performance Comparison
+  </text>
+  <text x="280" y="40" text-anchor="middle"
+        font-size="11" fill="#555" font-style="italic">
+    Fig. 6. Precision, Recall, F1-Score, and ROC-AUC across models (Section IV)
+  </text>
+
+  <!-- ── Y-axis label (rotated) ────────────────────────── -->
+  <text transform="translate(14,167) rotate(-90)"
+        text-anchor="middle" font-size="10.5" fill="#333">
+    Metric Score
+  </text>
+
+  <!-- ── Chart background ──────────────────────────────── -->
+  <rect x="55" y="62" width="428" height="210"
+        fill="#FAFAFA" stroke="#CCCCCC" stroke-width="0.8"/>
+
+  <!-- ── Horizontal grid lines + Y-axis labels ─────────── -->
+  <!-- 1.0  y=62  -->
+  <line x1="55" y1="62"  x2="483" y2="62"  stroke="#DDDDDD" stroke-width="1"/>
+  <text x="48" y="66"  text-anchor="end" font-size="9" fill="#555">1.0</text>
+  <!-- 0.8  y=104 -->
+  <line x1="55" y1="104" x2="483" y2="104" stroke="#DDDDDD" stroke-width="1"/>
+  <text x="48" y="108" text-anchor="end" font-size="9" fill="#555">0.8</text>
+  <!-- 0.6  y=146 -->
+  <line x1="55" y1="146" x2="483" y2="146" stroke="#DDDDDD" stroke-width="1"/>
+  <text x="48" y="150" text-anchor="end" font-size="9" fill="#555">0.6</text>
+  <!-- 0.4  y=188 -->
+  <line x1="55" y1="188" x2="483" y2="188" stroke="#DDDDDD" stroke-width="1"/>
+  <text x="48" y="192" text-anchor="end" font-size="9" fill="#555">0.4</text>
+  <!-- 0.2  y=230 -->
+  <line x1="55" y1="230" x2="483" y2="230" stroke="#DDDDDD" stroke-width="1"/>
+  <text x="48" y="234" text-anchor="end" font-size="9" fill="#555">0.2</text>
+  <!-- 0.0  y=272 (baseline) -->
+  <line x1="55" y1="272" x2="483" y2="272" stroke="#AAAAAA" stroke-width="1.2"/>
+  <text x="48" y="276" text-anchor="end" font-size="9" fill="#555">0.0</text>
+
+  <!-- ── Y-axis line ────────────────────────────────────── -->
+  <line x1="55" y1="62" x2="55" y2="272" stroke="#555" stroke-width="1.2"/>
+
+  <!--
+    ══════════════════════════════════════════════════════
+    BARS
+    Bar width=16, inner gap=3, group width=92
+    y_top = 272 − (value × 210)
+    Bar offsets within group: 0, 19, 38, 57, 76
+    Colors: LR=#9E9E9E  RF=#2E6DA4  CatBoost=#E8871A
+            LightGBM=#2E7A2E  Ensemble=#6B2D8B
+    ══════════════════════════════════════════════════════
+  -->
+
+  <!-- GROUP 1 — PRECISION  (left=55) -->
+  <!-- LR  0.72  h=151  top=121 -->
+  <rect x="55"  y="121" width="16" height="151" rx="2" fill="#9E9E9E"/>
+  <!-- RF  0.84  h=176  top=96 -->
+  <rect x="74"  y="96"  width="16" height="176" rx="2" fill="#2E6DA4"/>
+  <!-- CatBoost 0.91 h=191 top=81 -->
+  <rect x="93"  y="81"  width="16" height="191" rx="2" fill="#E8871A"/>
+  <!-- LightGBM 0.89 h=187 top=85 -->
+  <rect x="112" y="85"  width="16" height="187" rx="2" fill="#2E7A2E"/>
+  <!-- Ensemble 0.93 h=195 top=77 -->
+  <rect x="131" y="77"  width="16" height="195" rx="2" fill="#6B2D8B"/>
+
+  <!-- GROUP 2 — RECALL  (left=171) -->
+  <!-- LR  0.68  h=143  top=129 -->
+  <rect x="171" y="129" width="16" height="143" rx="2" fill="#9E9E9E"/>
+  <!-- RF  0.79  h=166  top=106 -->
+  <rect x="190" y="106" width="16" height="166" rx="2" fill="#2E6DA4"/>
+  <!-- CatBoost 0.87 h=183 top=89 -->
+  <rect x="209" y="89"  width="16" height="183" rx="2" fill="#E8871A"/>
+  <!-- LightGBM 0.85 h=179 top=93 -->
+  <rect x="228" y="93"  width="16" height="179" rx="2" fill="#2E7A2E"/>
+  <!-- Ensemble 0.91 h=191 top=81 -->
+  <rect x="247" y="81"  width="16" height="191" rx="2" fill="#6B2D8B"/>
+
+  <!-- GROUP 3 — F1-SCORE  (left=287) -->
+  <!-- LR  0.70  h=147  top=125 -->
+  <rect x="287" y="125" width="16" height="147" rx="2" fill="#9E9E9E"/>
+  <!-- RF  0.81  h=170  top=102 -->
+  <rect x="306" y="102" width="16" height="170" rx="2" fill="#2E6DA4"/>
+  <!-- CatBoost 0.89 h=187 top=85 -->
+  <rect x="325" y="85"  width="16" height="187" rx="2" fill="#E8871A"/>
+  <!-- LightGBM 0.87 h=183 top=89 -->
+  <rect x="344" y="89"  width="16" height="183" rx="2" fill="#2E7A2E"/>
+  <!-- Ensemble 0.92 h=193 top=79 -->
+  <rect x="363" y="79"  width="16" height="193" rx="2" fill="#6B2D8B"/>
+
+  <!-- GROUP 4 — ROC-AUC  (left=403) -->
+  <!-- LR  0.85  h=179  top=93 -->
+  <rect x="403" y="93"  width="16" height="179" rx="2" fill="#9E9E9E"/>
+  <!-- RF  0.92  h=193  top=79 -->
+  <rect x="422" y="79"  width="16" height="193" rx="2" fill="#2E6DA4"/>
+  <!-- CatBoost 0.97 h=204 top=68 -->
+  <rect x="441" y="68"  width="16" height="204" rx="2" fill="#E8871A"/>
+  <!-- LightGBM 0.96 h=202 top=70 -->
+  <rect x="460" y="70"  width="16" height="202" rx="2" fill="#2E7A2E"/>
+  <!-- Ensemble 0.98 h=206 top=66 -->
+  <rect x="479" y="66"  width="16" height="206" rx="2" fill="#6B2D8B"/>
+
+  <!-- ── X-axis group labels ────────────────────────────── -->
+  <text x="101" y="290" text-anchor="middle"
+        font-size="11" font-weight="bold" fill="#333">Precision</text>
+  <text x="217" y="290" text-anchor="middle"
+        font-size="11" font-weight="bold" fill="#333">Recall</text>
+  <text x="333" y="290" text-anchor="middle"
+        font-size="11" font-weight="bold" fill="#333">F1-Score</text>
+  <text x="449" y="290" text-anchor="middle"
+        font-size="11" font-weight="bold" fill="#333">ROC-AUC</text>
+
+  <!-- ── Legend (two rows) ─────────────────────────────── -->
+  <!-- Row 1: LR, RF, CatBoost -->
+  <rect x="70"  y="308" width="14" height="12" rx="2" fill="#9E9E9E"/>
+  <text x="88"  y="319" font-size="10" fill="#333">Log. Regression</text>
+
+  <rect x="196" y="308" width="14" height="12" rx="2" fill="#2E6DA4"/>
+  <text x="214" y="319" font-size="10" fill="#333">Random Forest</text>
+
+  <rect x="316" y="308" width="14" height="12" rx="2" fill="#E8871A"/>
+  <text x="334" y="319" font-size="10" fill="#333">CatBoost</text>
+
+  <!-- Row 2: LightGBM, Ensemble -->
+  <rect x="130" y="328" width="14" height="12" rx="2" fill="#2E7A2E"/>
+  <text x="148" y="339" font-size="10" fill="#333">LightGBM</text>
+
+  <rect x="258" y="328" width="14" height="12" rx="2" fill="#6B2D8B"/>
+  <text x="276" y="339" font-size="10" fill="#333">Ensemble (all models)</text>
+
+  <!-- ── Footnote ───────────────────────────────────────── -->
+  <text x="280" y="360" text-anchor="middle"
+        font-size="8.5" fill="#999" font-style="italic">
+    Reported on IEEE-CIS held-out test set. Higher values are better across all metrics.
+  </text>
+
+</svg>

@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Feedback and Retraining Loop — Section III-A, Part 5
+  Six nodes arranged in a clockwise hexagon.
+  Arrow marker: right-pointing triangle, tip=(12,4), refX=12, orient=auto.
+  One definition handles all six arrow directions automatically.
+
+  Circle centre: (300, 268).  Node radius (centre-to-centre): 158 px.
+  Node positions (from top, 60° steps):
+    ① (300, 110)   ② (437, 189)   ③ (437, 347)
+    ④ (300, 426)   ⑤ (163, 347)   ⑥ (163, 189)
+
+  Arrow endpoints computed at box edge intersections
+  (box half-width=55, half-height=25).
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 600 492" width="600" height="492"
+     font-family="Times New Roman, serif">
+
+  <!-- ── Arrow marker ──────────────────────────────────── -->
+  <defs>
+    <!--
+      Single marker for every direction.
+      Right-pointing triangle: tip at (12,4).
+      refX="12" → tip on line endpoint.
+      orient="auto" → rotates for any line direction.
+    -->
+    <marker id="arr" markerWidth="12" markerHeight="8"
+            refX="12" refY="4"
+            orient="auto" markerUnits="userSpaceOnUse">
+      <polygon points="0,0 12,4 0,8" fill="#333333"/>
+    </marker>
+  </defs>
+
+  <rect width="600" height="492" fill="#FFFFFF"/>
+
+  <!-- ── Title ─────────────────────────────────────────── -->
+  <text x="300" y="22" text-anchor="middle"
+        font-size="14.5" font-weight="bold" fill="#111">
+    Feedback &amp; Continuous Retraining Loop
+  </text>
+  <text x="300" y="40" text-anchor="middle"
+        font-size="11" fill="#555" font-style="italic">
+    Fig. 7. Analyst-in-the-loop model improvement cycle (Section III-A, Part 5)
+  </text>
+
+  <!-- ── Decorative dashed circle ──────────────────────── -->
+  <circle cx="300" cy="268" r="118"
+          fill="none" stroke="#CCCCCC"
+          stroke-width="1" stroke-dasharray="6,4"/>
+
+  <!-- ── Centre label ──────────────────────────────────── -->
+  <text x="300" y="262" text-anchor="middle"
+        font-size="10.5" fill="#AAAAAA" font-style="italic">Continuous</text>
+  <text x="300" y="278" text-anchor="middle"
+        font-size="10.5" fill="#AAAAAA" font-style="italic">Improvement</text>
+
+  <!--
+    ══════════════════════════════════════════════════════
+    NODE BOXES  (width=110, height=50, header=18px)
+    Centre coords: ①(300,110) ②(437,189) ③(437,347)
+                   ④(300,426) ⑤(163,347) ⑥(163,189)
+    ══════════════════════════════════════════════════════
+  -->
+
+  <!-- ① Fraud Detection  (245,85)–(355,135) -->
+  <rect x="245" y="85"  width="110" height="50" rx="6"
+        fill="#FFF5F0" stroke="#B84010" stroke-width="1.6"/>
+  <rect x="245" y="85"  width="110" height="18" rx="6" fill="#B84010"/>
+  <text x="300" y="97"  text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#fff">&#x2460; Fraud Detection</text>
+  <text x="300" y="113" text-anchor="middle" font-size="8.5" fill="#333">Real-time scoring</text>
+  <text x="300" y="125" text-anchor="middle" font-size="8.5" fill="#333">score &#x2265; &#x3C4; &#x2192; flag</text>
+
+  <!-- ② Analyst Review  (382,164)–(492,214) -->
+  <rect x="382" y="164" width="110" height="50" rx="6"
+        fill="#FFF8E1" stroke="#B87000" stroke-width="1.6"/>
+  <rect x="382" y="164" width="110" height="18" rx="6" fill="#B87000"/>
+  <text x="437" y="176" text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#fff">&#x2461; Analyst Review</text>
+  <text x="437" y="192" text-anchor="middle" font-size="8.5" fill="#333">Manual verification</text>
+  <text x="437" y="204" text-anchor="middle" font-size="8.5" fill="#333">FP / FN labeling</text>
+
+  <!-- ③ Confirmed Labels  (382,322)–(492,372) -->
+  <rect x="382" y="322" width="110" height="50" rx="6"
+        fill="#FFFDE7" stroke="#D4920A" stroke-width="1.6"/>
+  <rect x="382" y="322" width="110" height="18" rx="6" fill="#D4920A"/>
+  <text x="437" y="334" text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#fff">&#x2462; Confirmed Labels</text>
+  <text x="437" y="350" text-anchor="middle" font-size="8.5" fill="#333">Ground-truth labels</text>
+  <text x="437" y="362" text-anchor="middle" font-size="8.5" fill="#333">FP / FN corrected</text>
+
+  <!-- ④ Data Lake  (245,401)–(355,451) -->
+  <rect x="245" y="401" width="110" height="50" rx="6"
+        fill="#EAF3FB" stroke="#2E6DA4" stroke-width="1.6"/>
+  <rect x="245" y="401" width="110" height="18" rx="6" fill="#2E6DA4"/>
+  <text x="300" y="413" text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#fff">&#x2463; Data Lake</text>
+  <text x="300" y="429" text-anchor="middle" font-size="8.5" fill="#333">S3 / GCS storage</text>
+  <text x="300" y="441" text-anchor="middle" font-size="8.5" fill="#333">Versioned dataset</text>
+
+  <!-- ⑤ Model Retraining  (108,322)–(218,372) -->
+  <rect x="108" y="322" width="110" height="50" rx="6"
+        fill="#F0FBF0" stroke="#2E7A2E" stroke-width="1.6"/>
+  <rect x="108" y="322" width="110" height="18" rx="6" fill="#2E7A2E"/>
+  <text x="163" y="334" text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#fff">&#x2464; Retraining</text>
+  <text x="163" y="350" text-anchor="middle" font-size="8.5" fill="#333">CatBoost / LightGBM</text>
+  <text x="163" y="362" text-anchor="middle" font-size="8.5" fill="#333">Scheduled refit</text>
+
+  <!-- ⑥ Updated Model  (108,164)–(218,214) -->
+  <rect x="108" y="164" width="110" height="50" rx="6"
+        fill="#FDF0F8" stroke="#6B2D8B" stroke-width="1.6"/>
+  <rect x="108" y="164" width="110" height="18" rx="6" fill="#6B2D8B"/>
+  <text x="163" y="176" text-anchor="middle"
+        font-size="9" font-weight="bold" fill="#fff">&#x2465; Updated Model</text>
+  <text x="163" y="192" text-anchor="middle" font-size="8.5" fill="#333">New threshold &#x3C4;</text>
+  <text x="163" y="204" text-anchor="middle" font-size="8.5" fill="#333">A/B validated</text>
+
+  <!--
+    ══════════════════════════════════════════════════════
+    CLOCKWISE ARROWS   ①→②→③→④→⑤→⑥→①
+
+    Each arrow: line from edge of source box to edge of target box.
+    Tip placed exactly on target box edge via refX="12".
+    orient="auto" handles all six directions.
+
+    Endpoints (source_exit → target_entry):
+      ①→② : (343,135) → (392,164)   [down-right]
+      ②→③ : (437,214) → (437,322)   [straight down]
+      ③→④ : (392,372) → (344,401)   [down-left]
+      ④→⑤ : (256,401) → (208,372)   [up-left]
+      ⑤→⑥ : (163,322) → (163,214)   [straight up]
+      ⑥→① : (208,164) → (256,135)   [up-right]
+    ══════════════════════════════════════════════════════
+  -->
+
+  <!-- ①→② -->
+  <line x1="343" y1="135" x2="392" y2="164"
+        stroke="#333" stroke-width="2.2" marker-end="url(#arr)"/>
+
+  <!-- ②→③ -->
+  <line x1="437" y1="214" x2="437" y2="322"
+        stroke="#333" stroke-width="2.2" marker-end="url(#arr)"/>
+
+  <!-- ③→④ -->
+  <line x1="392" y1="372" x2="344" y2="401"
+        stroke="#333" stroke-width="2.2" marker-end="url(#arr)"/>
+
+  <!-- ④→⑤ -->
+  <line x1="256" y1="401" x2="208" y2="372"
+        stroke="#333" stroke-width="2.2" marker-end="url(#arr)"/>
+
+  <!-- ⑤→⑥ -->
+  <line x1="163" y1="322" x2="163" y2="214"
+        stroke="#333" stroke-width="2.2" marker-end="url(#arr)"/>
+
+  <!-- ⑥→① -->
+  <line x1="208" y1="164" x2="256" y2="135"
+        stroke="#333" stroke-width="2.2" marker-end="url(#arr)"/>
+
+  <!--
+    ══════════════════════════════════════════════════════
+    ARROW LABELS  (placed at midpoint of each arrow, offset away from circle)
+    ══════════════════════════════════════════════════════
+  -->
+
+  <!-- ①→② mid≈(368,150) — label upper-right -->
+  <text x="375" y="146" font-size="8.5" fill="#555" font-style="italic">alert flagged</text>
+
+  <!-- ②→③ mid≈(437,268) — label right -->
+  <text x="444" y="272" font-size="8.5" fill="#555" font-style="italic">label confirmed</text>
+
+  <!-- ③→④ mid≈(368,387) — label lower-right -->
+  <text x="372" y="400" font-size="8.5" fill="#555" font-style="italic">labeled records</text>
+
+  <!-- ④→⑤ mid≈(232,387) — label lower-left -->
+  <text x="228" y="400" text-anchor="end"
+        font-size="8.5" fill="#555" font-style="italic">training batch</text>
+
+  <!-- ⑤→⑥ mid≈(163,268) — label left -->
+  <text x="157" y="272" text-anchor="end"
+        font-size="8.5" fill="#555" font-style="italic">new weights</text>
+
+  <!-- ⑥→① mid≈(232,150) — label upper-left -->
+  <text x="228" y="146" text-anchor="end"
+        font-size="8.5" fill="#555" font-style="italic">deployed</text>
+
+  <!-- ── Footer ─────────────────────────────────────────── -->
+  <line x1="40" y1="468" x2="560" y2="468"
+        stroke="#DDDDDD" stroke-width="0.8"/>
+  <text x="300" y="482" text-anchor="middle"
+        font-size="9" fill="#999" font-style="italic">
+    HITL loop: analyst-confirmed labels retrain models on a rolling schedule,
+    closing the drift gap between deployed and production distributions.
+  </text>
+
+</svg>

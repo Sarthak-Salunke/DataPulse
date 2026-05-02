@@ -1,0 +1,2 @@
+Model,ROC-AUC,PR-AUC,F1-Score,Precision,Recall
+Neural Network (MLP),1.0,1.0,0.9932885906040269,1.0,0.9866666666666667

@@ -1,0 +1,4 @@
+Model,ROC_AUC,PR_AUC,F1_Score,Precision,Recall
+GBM Baseline,1.0,1.0,1.0,1.0,1.0
+GBM Optimized,1.0,1.0,1.0,1.0,1.0
+GBM Optimized (Threshold Tuned),1.0,1.0,1.0,1.0,1.0
