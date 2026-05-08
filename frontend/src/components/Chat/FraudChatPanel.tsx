@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { getAuthToken } from '../../hooks/useApiData';
 import DataTable from './DataTable';
 import ChartRenderer from './ChartRenderer';
 
@@ -205,10 +206,14 @@ export default function FraudChatPanel() {
     setLoading(true);
 
     try {
+      const token = getAuthToken();
       const res = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           message: text,
           conversation_history: messages,
