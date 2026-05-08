@@ -1,3 +1,1 @@
-ml/training/**/*.csv filter=lfs diff=lfs merge=lfs -text
-data/**/*.csv filter=lfs diff=lfs merge=lfs -text
-data/*.csv filter=lfs diff=lfs merge=lfs -text
+# LFS rules removed — data/ and ml/ output dirs are gitignored

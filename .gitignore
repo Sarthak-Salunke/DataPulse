@@ -1,5 +1,13 @@
-# ── Large datasets (managed outside git) ─────────────────────────────────────
-ml/training/Neural Network/data/raw/dataset.csv
+# ── Large datasets & training artifacts (not needed at runtime) ───────────────
+data/
+ml/training/GBM/output/
+ml/training/SVM/output/
+ml/training/isolation_forest/output/
+ml/training/logistic_regression/output/
+ml/training/naive_bayes/output/
+ml/training/neural_network/output/
+ml/training/random_forest/output/
+ml/training/Neural\ Network/data/raw/dataset.csv
 
 # ── Build outputs ─────────────────────────────────────────────────────────────
 frontend/dist/
