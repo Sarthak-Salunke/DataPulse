@@ -1,4 +1,3 @@
-// ── Dashboard — full redesign matching design/DataPulse Dashboard Redesign.html ──
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip as RcTooltip, ResponsiveContainer,
@@ -15,7 +14,6 @@ const C = {
   fraud:  '#e26d5c',
   axis:   '#6b6f78',
   tip:    '#191b20',
-  accent: '#f0b35a',
   safe:   '#6fb98f',
 };
 
@@ -64,12 +62,12 @@ function buildCategoryDist(txns: Transaction[]) {
 }
 
 const FALLBACK_CATS = [
-  { name: 'grocery pos', pct: 28, fraud: 1 },
-  { name: 'shopping net', pct: 22, fraud: 5 },
-  { name: 'misc net', pct: 18, fraud: 3 },
-  { name: 'gas transport', pct: 12, fraud: 1 },
-  { name: 'home', pct: 10, fraud: 2 },
-  { name: 'entertainment', pct: 10, fraud: 1 },
+  { name: 'grocery pos',    pct: 28, fraud: 1 },
+  { name: 'shopping net',   pct: 22, fraud: 5 },
+  { name: 'misc net',       pct: 18, fraud: 3 },
+  { name: 'gas transport',  pct: 12, fraud: 1 },
+  { name: 'home',           pct: 10, fraud: 2 },
+  { name: 'entertainment',  pct: 10, fraud: 1 },
 ];
 
 function buildHeatmap(txns: Transaction[]): number[][] {
@@ -82,8 +80,7 @@ function buildHeatmap(txns: Transaction[]): number[][] {
   });
   const max = Math.max(...grid.flat(), 1);
   const result = grid.map(row => row.map(v => Math.min(5, Math.round((v / max) * 5))));
-  const hasData = result.flat().some(v => v > 0);
-  return hasData ? result : FALLBACK_HEAT;
+  return result.flat().some(v => v > 0) ? result : FALLBACK_HEAT;
 }
 
 const FALLBACK_HEAT: number[][] = Array.from({ length: 7 }, (_, day) =>
@@ -94,12 +91,12 @@ const FALLBACK_HEAT: number[][] = Array.from({ length: 7 }, (_, day) =>
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-// ── Inline sub-components ─────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────
 
 function RingGauge({ pct, color }: { pct: number; color: string }) {
   const r = 26, circ = 2 * Math.PI * r;
   return (
-    <svg viewBox="0 0 64 64" style={{ width: 56, height: 56, flexShrink: 0 }}>
+    <svg viewBox="0 0 64 64" style={{ width: 52, height: 52, flexShrink: 0 }}>
       <circle cx="32" cy="32" r={r} fill="none" stroke="#262932" strokeWidth="6" />
       <circle cx="32" cy="32" r={r} fill="none" stroke={color} strokeWidth="6"
         strokeDasharray={circ}
@@ -121,9 +118,9 @@ function AlertCard({ a }: { a: FraudAlert }) {
       display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 10, alignItems: 'center',
     }}>
       <div style={{
-        width: 32, height: 32, borderRadius: 6, background: 'var(--risk-soft)',
+        width: 30, height: 30, borderRadius: 6, background: 'var(--risk-soft)',
         color: 'var(--risk)', display: 'grid', placeItems: 'center',
-        fontFamily: 'var(--mono)', fontSize: 14, fontWeight: 600,
+        fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 700,
       }}>!</div>
       <div>
         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{label}</div>
@@ -155,139 +152,121 @@ export default function Dashboard() {
   const rawRate   = metrics?.fraudRate         ?? 0.42;
   const rawAcc    = metrics?.accuracy          ?? 94.3;
 
-  const fraudRate  = useCountUp(rawRate,   1600, 2);
-  const accuracy   = useCountUp(rawAcc,    1400, 1);
   const txTotal    = useCountUp(rawTotal,  1800, 0);
   const fraudCount = useCountUp(rawFraud,  1400, 0);
+  const fraudRate  = useCountUp(rawRate,   1600, 2);
+  const accuracy   = useCountUp(rawAcc,    1400, 1);
 
   const volumeData = buildVolumeData(transactions);
   const heatmap    = buildHeatmap(transactions);
   const catDist    = buildCategoryDist(transactions);
   const catRows    = catDist.length > 0 ? catDist : FALLBACK_CATS;
   const sparkFraud = volumeData.map(d => d.fraud);
-  const capitalK   = ((rawFraud * 3900) / 1000).toFixed(1);
 
   return (
     <>
-      {/* ── Hero ──────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 14, marginBottom: 14 }}>
-        {/* Fraud rate card */}
-        <div className="panel reveal" data-d="1" style={{
-          position: 'relative', overflow: 'hidden', padding: '24px 28px',
-          background: 'linear-gradient(180deg, var(--ink-1), var(--ink-0))',
-          borderColor: 'var(--rule-strong)',
-        }}>
-          <div className="panel-sub" style={{
-            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14,
-            color: 'var(--risk)', textTransform: 'uppercase', letterSpacing: '0.04em',
-          }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--risk)', display: 'inline-block' }}/>
-            FRAUD INCIDENCE RATE · ROLLING 1H
+      {/* ── Row 1: KPI cards ──────────────────────────────────── */}
+      <div className="reveal" data-d="1" style={{
+        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: 14, marginBottom: 14,
+      }}>
+
+        {/* Total transactions */}
+        <div className="panel" style={{ padding: '20px 22px' }}>
+          <div className="panel-sub" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+            Total transactions
           </div>
-          <div style={{
-            fontSize: 64, fontWeight: 500, letterSpacing: '-0.04em',
-            fontVariantNumeric: 'tabular-nums', lineHeight: 1,
-          }}>
+          <div style={{ fontSize: 34, fontWeight: 500, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+            {Math.round(txTotal).toLocaleString()}
+          </div>
+          <div style={{ marginTop: 8, fontFamily: 'var(--mono)', fontSize: 11 }}>
+            <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 10, color: 'var(--safe)', background: 'var(--safe-soft)' }}>
+              ↑ {Math.round(rawTotal / 1440)}/min avg
+            </span>
+          </div>
+        </div>
+
+        {/* Fraud detected */}
+        <div className="panel" style={{ padding: '20px 22px', borderColor: 'var(--risk)' }}>
+          <div className="panel-sub" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+            Fraud detected
+          </div>
+          <div style={{ fontSize: 34, fontWeight: 500, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1, color: 'var(--risk)' }}>
+            {Math.round(fraudCount)}
+          </div>
+          <div style={{ marginTop: 8, fontFamily: 'var(--mono)', fontSize: 11 }}>
+            <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 10, color: 'var(--risk)', background: 'var(--risk-soft)' }}>
+              +{Math.round(rawFraud * 0.2)} last hour
+            </span>
+          </div>
+        </div>
+
+        {/* Fraud rate + sparkline */}
+        <div className="panel" style={{ padding: '20px 22px', position: 'relative', overflow: 'hidden' }}>
+          <div className="panel-sub" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+            Fraud incidence rate
+          </div>
+          <div style={{ fontSize: 34, fontWeight: 500, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
             {fraudRate.toFixed(2)}
-            <span style={{ fontSize: 28, color: 'var(--fg-3)', fontWeight: 400, marginLeft: 4 }}>%</span>
+            <span style={{ fontSize: 16, color: 'var(--fg-3)', fontWeight: 400, marginLeft: 3 }}>%</span>
           </div>
-          <div style={{ marginTop: 10, color: 'var(--fg-2)', fontSize: 13, display: 'flex', alignItems: 'baseline', gap: 14 }}>
-            {Math.round(fraudCount)} of {Math.round(txTotal).toLocaleString()} transactions flagged
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--risk)' }}>
+          <div style={{ marginTop: 8, fontFamily: 'var(--mono)', fontSize: 11 }}>
+            <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 10, color: 'var(--risk)', background: 'var(--risk-soft)' }}>
               ↑ +0.08 pp vs prior hour
             </span>
           </div>
-          {/* Inline sparkline */}
-          <svg style={{ position: 'absolute', right: 28, bottom: 24, width: 220, height: 70 }}
-               viewBox="0 0 280 80" preserveAspectRatio="none" aria-hidden>
+          {/* Sparkline */}
+          <svg style={{ position: 'absolute', right: 12, bottom: 12, width: 90, height: 36 }}
+               viewBox="0 0 110 44" preserveAspectRatio="none" aria-hidden>
             <defs>
-              <linearGradient id="heroFill" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="kpiFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#e26d5c" stopOpacity="0.3"/>
                 <stop offset="100%" stopColor="#e26d5c" stopOpacity="0"/>
               </linearGradient>
             </defs>
             {(() => {
-              const pts = sparkFraud.length >= 2 ? sparkFraud : [2,3,2,4,3,5,4,6,5,7,6,8,7,9,8,10];
+              const pts = sparkFraud.length >= 2 ? sparkFraud : [2,3,2,4,3,5,4,6,5,7];
               const min = Math.min(...pts), max = Math.max(...pts, min + 1);
-              const xs = pts.map((_, i) => (i / (pts.length - 1)) * 280);
-              const ys = pts.map(v => 70 - ((v - min) / (max - min)) * 58);
+              const xs = pts.map((_, i) => (i / (pts.length - 1)) * 110);
+              const ys = pts.map(v => 36 - ((v - min) / (max - min)) * 28);
               const line = pts.map((_, i) => `${i === 0 ? 'M' : 'L'}${xs[i]},${ys[i]}`).join(' ');
               return (
                 <>
-                  <path d={`${line} L${xs[xs.length-1]},80 L0,80 Z`} fill="url(#heroFill)"/>
+                  <path d={`${line} L${xs[xs.length-1]},44 L0,44 Z`} fill="url(#kpiFill)"/>
                   <path d={line} fill="none" stroke="#e26d5c" strokeWidth="1.5"/>
-                  <circle cx={xs[xs.length-1]} cy={ys[ys.length-1]} r="3" fill="#e26d5c"/>
+                  <circle cx={xs[xs.length-1]} cy={ys[ys.length-1]} r="2.5" fill="#e26d5c"/>
                 </>
               );
             })()}
           </svg>
         </div>
 
-        {/* Mini-stats column */}
-        <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: 14 }}>
-          <div className="panel reveal" data-d="2" style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px',
-          }}>
-            <div>
-              <div className="panel-sub" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Model confidence</div>
-              <div style={{ fontSize: 26, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
-                {accuracy.toFixed(1)}<small style={{ fontSize: 13, color: 'var(--fg-3)', marginLeft: 2 }}>%</small>
-              </div>
-              <div className="panel-sub" style={{ marginTop: 4 }}>precision · recall 92.0%</div>
+        {/* Model accuracy */}
+        <div className="panel" style={{ padding: '20px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div className="panel-sub" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+              Model accuracy
             </div>
-            <RingGauge pct={accuracy} color={C.safe} />
-          </div>
-          <div className="panel reveal" data-d="3" style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px',
-          }}>
-            <div>
-              <div className="panel-sub" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Capital at risk · today</div>
-              <div style={{ fontSize: 26, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
-                ${capitalK}<small style={{ fontSize: 13, color: 'var(--fg-3)', marginLeft: 2 }}>K</small>
-              </div>
-              <div className="panel-sub" style={{ marginTop: 4 }}>across {rawFraud} incidents</div>
+            <div style={{ fontSize: 34, fontWeight: 500, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+              {accuracy.toFixed(1)}
+              <span style={{ fontSize: 16, color: 'var(--fg-3)', fontWeight: 400, marginLeft: 3 }}>%</span>
             </div>
-            <RingGauge pct={Math.min(100, (rawFraud / 200) * 100 + 15)} color={C.fraud} />
+            <div style={{ marginTop: 8, fontFamily: 'var(--mono)', fontSize: 11 }}>
+              <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 10, color: 'var(--safe)', background: 'var(--safe-soft)' }}>
+                precision · recall 92.0%
+              </span>
+            </div>
           </div>
+          <RingGauge pct={accuracy} color={C.safe} />
         </div>
       </div>
 
-      {/* ── KPI strip ─────────────────────────────────────────── */}
-      <div className="reveal" data-d="4" style={{
-        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-        background: 'var(--ink-1)', border: '1px solid var(--rule)',
-        borderRadius: 12, marginBottom: 18, overflow: 'hidden',
+      {/* ── Row 2: Volume chart + Fraud alerts ────────────────── */}
+      <div className="reveal" data-d="2" style={{
+        display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 14, marginBottom: 14,
       }}>
-        {([
-          { label: 'Throughput', value: `${Math.round(rawTotal / 1440)}/min`, meta: '↑ 4.2% vs 24h avg', good: true },
-          { label: 'Fraud detected', value: String(rawFraud), meta: `+${Math.round(rawFraud * 0.2)} last hour`, good: false },
-          { label: 'False positives', value: String(Math.max(1, Math.round(rawFraud * 0.06))), meta: '↓ 2 last hour', good: true },
-          { label: 'Median latency', value: '38 ms', meta: 'P99 · 142 ms', good: null as boolean | null },
-        ] as { label: string; value: string; meta: string; good: boolean | null }[]).map((k, i) => (
-          <div key={k.label} style={{
-            padding: '18px 22px',
-            borderRight: i < 3 ? '1px solid var(--rule)' : 'none',
-          }}>
-            <div className="panel-sub" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>{k.label}</div>
-            <div style={{ fontSize: 24, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
-              {k.value}
-            </div>
-            <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-3)' }}>
-              <span style={{
-                padding: '1px 6px', borderRadius: 3, fontSize: 10,
-                color: k.good === true ? 'var(--safe)' : k.good === false ? 'var(--risk)' : 'var(--fg-3)',
-                background: k.good === true ? 'var(--safe-soft)' : k.good === false ? 'var(--risk-soft)' : 'transparent',
-              }}>{k.meta}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Main grid ─────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 14 }}>
-
-        {/* Volume chart — col 8 */}
-        <div className="panel reveal" data-d="5" style={{ gridColumn: 'span 8' }}>
+        {/* Volume chart */}
+        <div className="panel" style={{ gridColumn: 'span 8' }}>
           <div className="panel-head">
             <div>
               <div className="panel-title">Transaction volume <em>vs. flagged events</em></div>
@@ -332,8 +311,8 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Fraud alerts feed — col 4 */}
-        <div className="panel reveal" data-d="6" style={{ gridColumn: 'span 4' }}>
+        {/* Fraud alerts */}
+        <div className="panel" style={{ gridColumn: 'span 4' }}>
           <div className="panel-head">
             <div className="panel-title">Fraud alerts <em>· live</em></div>
             <span className="pill"><span className="live-dot"/>LIVE</span>
@@ -345,89 +324,19 @@ export default function Dashboard() {
             }
           </div>
         </div>
+      </div>
 
-        {/* Real-time feed table — col 8 */}
-        <div className="reveal" data-d="7" style={{ gridColumn: 'span 8' }}>
+      {/* ── Row 3: Real-time feed + Category distribution ─────── */}
+      <div className="reveal" data-d="3" style={{
+        display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 14, marginBottom: 14,
+      }}>
+        {/* Real-time feed */}
+        <div style={{ gridColumn: 'span 8' }}>
           <RealTimeFeed transactions={transactions.slice(0, 50)}/>
         </div>
 
-        {/* Pipeline health — col 4 */}
-        <div className="panel reveal" data-d="8" style={{ gridColumn: 'span 4' }}>
-          <div className="panel-head">
-            <div className="panel-title">Pipeline health</div>
-            <span className="pill"><span className="live-dot"/>LIVE</span>
-          </div>
-          {([
-            { name: 'Kafka ingest',  v: 92, label: '23.4K msg/s', ok: true },
-            { name: 'Sklearn model', v: 76, label: '2.0s batch',  ok: true },
-            { name: 'Feature store', v: 64, label: '8 ms lookup', ok: true },
-            { name: 'Decision API',  v: 48, label: '38 ms',       ok: false },
-          ] as { name: string; v: number; label: string; ok: boolean }[]).map((row, i, arr) => (
-            <div key={row.name} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 0',
-              borderBottom: i < arr.length - 1 ? '1px solid var(--rule)' : 'none',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: row.ok ? C.safe : C.accent, display: 'inline-block' }}/>
-                {row.name}
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-2)' }}>{row.label}</div>
-                <div style={{ width: 80, height: 3, background: 'var(--ink-3)', borderRadius: 2, overflow: 'hidden', marginTop: 4 }}>
-                  <span style={{ display: 'block', height: '100%', width: `${row.v}%`, background: C.safe, borderRadius: 2 }}/>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Risk heatmap — col 8 */}
-        <div className="panel reveal" data-d="9" style={{ gridColumn: 'span 8' }}>
-          <div className="panel-head">
-            <div>
-              <div className="panel-title">Risk heatmap <em>· hour × day</em></div>
-              <div className="panel-sub">fraud event density by weekday and hour of day</div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 1 }}>
-              {DAYS.map(d => (
-                <div key={d} style={{ height: 14, display: 'flex', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-4)', width: 24 }}>{d}</div>
-              ))}
-            </div>
-            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(24, 1fr)', gridAutoRows: 14, gap: 2 }}>
-              {heatmap.flat().map((level, idx) => (
-                <div key={idx} style={{
-                  borderRadius: 2,
-                  background: level === 0 ? '#22252c'
-                    : level === 1 ? '#2a4a3c'
-                    : level === 2 ? '#3d6552'
-                    : level === 3 ? '#5a8a73'
-                    : level === 4 ? '#f0b35a55'
-                    : '#e26d5c',
-                }}/>
-              ))}
-            </div>
-          </div>
-          <div style={{ marginTop: 6, marginLeft: 32, display: 'grid', gridTemplateColumns: 'repeat(24, 1fr)', gap: 2 }}>
-            {Array.from({ length: 24 }, (_, i) => (
-              <div key={i} style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-4)', textAlign: 'center' }}>
-                {i % 6 === 0 ? `${String(i).padStart(2, '0')}h` : ''}
-              </div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-3)' }}>
-            Low
-            {(['#2a4a3c', '#3d6552', '#5a8a73', '#f0b35a55', '#e26d5c'] as const).map((bg, i) => (
-              <span key={i} style={{ width: 12, height: 12, borderRadius: 2, background: bg, display: 'inline-block' }}/>
-            ))}
-            High
-          </div>
-        </div>
-
-        {/* Category distribution — col 4 */}
-        <div className="panel reveal" data-d="10" style={{ gridColumn: 'span 4' }}>
+        {/* Category distribution */}
+        <div className="panel" style={{ gridColumn: 'span 4' }}>
           <div className="panel-head">
             <div className="panel-title">Top categories</div>
             <div className="panel-sub">by transaction volume</div>
@@ -436,22 +345,65 @@ export default function Dashboard() {
             <div key={i} style={{
               display: 'grid', gridTemplateColumns: '1fr auto',
               alignItems: 'center', gap: 10,
-              padding: '8px 0',
+              padding: '9px 0',
               borderBottom: i < catRows.length - 1 ? '1px solid var(--rule)' : 'none',
             }}>
               <div>
-                <div style={{ fontSize: 13, marginBottom: 4, textTransform: 'capitalize' }}>{cat.name}</div>
+                <div style={{ fontSize: 13, marginBottom: 5, textTransform: 'capitalize' }}>{cat.name}</div>
                 <div style={{ height: 4, background: 'var(--ink-3)', borderRadius: 2, overflow: 'hidden' }}>
-                  <span style={{ display: 'block', height: '100%', width: `${cat.pct}%`, background: cat.fraud > 2 ? C.fraud : C.accent, borderRadius: 2 }}/>
+                  <span style={{ display: 'block', height: '100%', width: `${cat.pct}%`, background: cat.fraud > 2 ? C.fraud : C.safe, borderRadius: 2 }}/>
                 </div>
               </div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-2)', width: 44, textAlign: 'right' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-2)', width: 36, textAlign: 'right' }}>
                 {cat.pct}%
               </div>
             </div>
           ))}
         </div>
+      </div>
 
+      {/* ── Row 4: Risk heatmap ───────────────────────────────── */}
+      <div className="panel reveal" data-d="4">
+        <div className="panel-head">
+          <div>
+            <div className="panel-title">Risk heatmap <em>· hour × day</em></div>
+            <div className="panel-sub">fraud event density by weekday and hour of day</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 1 }}>
+            {DAYS.map(d => (
+              <div key={d} style={{ height: 14, display: 'flex', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-4)', width: 24 }}>{d}</div>
+            ))}
+          </div>
+          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(24, 1fr)', gridAutoRows: 14, gap: 2 }}>
+            {heatmap.flat().map((level, idx) => (
+              <div key={idx} style={{
+                borderRadius: 2,
+                background: level === 0 ? '#22252c'
+                  : level === 1 ? '#2a4a3c'
+                  : level === 2 ? '#3d6552'
+                  : level === 3 ? '#5a8a73'
+                  : level === 4 ? '#f0b35a55'
+                  : '#e26d5c',
+              }}/>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginTop: 6, marginLeft: 32, display: 'grid', gridTemplateColumns: 'repeat(24, 1fr)', gap: 2 }}>
+          {Array.from({ length: 24 }, (_, i) => (
+            <div key={i} style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-4)', textAlign: 'center' }}>
+              {i % 6 === 0 ? `${String(i).padStart(2, '0')}h` : ''}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-3)' }}>
+          Low
+          {(['#2a4a3c', '#3d6552', '#5a8a73', '#f0b35a55', '#e26d5c'] as const).map((bg, i) => (
+            <span key={i} style={{ width: 12, height: 12, borderRadius: 2, background: bg, display: 'inline-block' }}/>
+          ))}
+          High
+        </div>
       </div>
     </>
   );
