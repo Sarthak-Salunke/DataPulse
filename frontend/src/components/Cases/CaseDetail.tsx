@@ -15,7 +15,7 @@ const FEATURES: Feature[] = [
 export default function CaseDetail() {
   const max = Math.max(...FEATURES.map(f => f.weight));
   return (
-    <AppShell active="alerts">
+    <AppShell>
       <Topbar
         crumbs={[
           { label: 'Risk operations', href: '/dashboard' },
