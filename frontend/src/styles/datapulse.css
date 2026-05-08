@@ -252,8 +252,8 @@ button { font-family: inherit; }
 .tag.brand  { background: var(--brand-soft); color: var(--brand); }
 .tag.amber  { background: var(--amber-soft); color: var(--amber); }
 
-/* ── Sidebar (shared shell) ────────────────────────── */
-.app-shell { display: grid; grid-template-columns: 230px 1fr; min-height: 100vh; }
+/* ── Full-width shell (sidebar removed) ────────────── */
+.app-shell-full { display: flex; flex-direction: column; min-height: 100vh; }
 
 .side {
   border-right: 1px solid var(--rule);
