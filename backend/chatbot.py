@@ -13,7 +13,7 @@ import os
 from typing import Any, List, Optional
 
 import pandas as pd
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi import Cookie
 from jose import JWTError, jwt
 from pydantic import BaseModel
@@ -35,11 +35,19 @@ _JWT_SECRET = os.getenv("JWT_SECRET_KEY", "change-me-in-production")
 _JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 
-def get_current_user(access_token: Optional[str] = Cookie(default=None)) -> dict:
-    if not access_token:
+def get_current_user(
+    request: Request,
+    access_token: Optional[str] = Cookie(default=None),
+) -> dict:
+    token = access_token
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+    if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
-        payload = jwt.decode(access_token, _JWT_SECRET, algorithms=[_JWT_ALGORITHM])
+        payload = jwt.decode(token, _JWT_SECRET, algorithms=[_JWT_ALGORITHM])
         username: Optional[str] = payload.get("sub")
         if not username:
             raise HTTPException(status_code=401, detail="Invalid token")

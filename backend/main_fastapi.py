@@ -26,7 +26,7 @@ Changes from original:
     Install all dependencies from the root requirements.txt.
 """
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, Response, Cookie
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, Response, Cookie, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -100,15 +100,21 @@ def _create_token(data: dict) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def get_current_user(access_token: Optional[str] = Cookie(default=None)) -> dict:
-    """
-    FastAPI dependency — reads the httpOnly cookie set on login.
-    Raises 401 if the cookie is missing or the token is invalid/expired.
-    """
-    if not access_token:
+def get_current_user(
+    request: Request,
+    access_token: Optional[str] = Cookie(default=None),
+) -> dict:
+    # Accept cookie first; fall back to Authorization: Bearer <token> header.
+    # This makes auth work cross-origin where third-party cookies are blocked.
+    token = access_token
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+    if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
-        payload = jwt.decode(access_token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         username: Optional[str] = payload.get("sub")
         if not username:
             raise HTTPException(status_code=401, detail="Invalid token")
@@ -252,6 +258,7 @@ class GoogleLoginRequest(BaseModel):
 class UserInfo(BaseModel):
     username: str
     role: str
+    token: Optional[str] = None
 
 
 # ============================================================================
@@ -732,11 +739,11 @@ def login(body: LoginRequest, response: Response):
         key="access_token",
         value=token,
         httponly=True,
-        samesite="none",        # required for cross-origin (Vercel → Render)
+        samesite="none",
         max_age=JWT_EXPIRE_MIN * 60,
-        secure=True,            # required when samesite="none"
+        secure=True,
     )
-    return {"username": user["username"], "role": user["role"]}
+    return {"username": user["username"], "role": user["role"], "token": token}
 
 
 @app.post("/auth/google", response_model=UserInfo)
@@ -768,11 +775,11 @@ def google_auth(body: GoogleLoginRequest, response: Response):
         key="access_token",
         value=token,
         httponly=True,
-        samesite="none",        # required for cross-origin (Vercel → Render)
+        samesite="none",
         max_age=JWT_EXPIRE_MIN * 60,
-        secure=True,            # required when samesite="none"
+        secure=True,
     )
-    return UserInfo(username=name, role="analyst")
+    return UserInfo(username=name, role="analyst", token=token)
 
 
 @app.post("/auth/logout")

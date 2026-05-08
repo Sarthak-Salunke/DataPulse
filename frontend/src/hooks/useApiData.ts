@@ -29,12 +29,33 @@ import type { DashboardMetrics, FraudAlert, Transaction } from '../types';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const WS_URL = import.meta.env.VITE_WEBSOCKET_URL || 'ws://localhost:8000/ws';
 
+// ── Token store ───────────────────────────────────────────────────────────────
+// Keeps the JWT in sessionStorage so it survives same-tab reloads/redirects.
+// Sent as Authorization: Bearer on every request so cross-origin cookie
+// blocking (Chrome Privacy Sandbox, Safari ITP) doesn't break auth.
+let _token: string | null = sessionStorage.getItem('dp_token');
+
+export function setAuthToken(token: string | null) {
+  _token = token;
+  if (token) sessionStorage.setItem('dp_token', token);
+  else sessionStorage.removeItem('dp_token');
+}
+
+export function getAuthToken(): string | null {
+  return _token;
+}
+
 async function apiFetch<T>(path: string): Promise<T> {
+  const headers: Record<string, string> = {};
+  const token = getAuthToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
+    headers,
   });
   if (res.status === 401) {
-    // Session expired or never set — hard redirect so the login page clears state
+    setAuthToken(null);
     window.location.replace('/login');
     throw new Error('UNAUTHENTICATED');
   }

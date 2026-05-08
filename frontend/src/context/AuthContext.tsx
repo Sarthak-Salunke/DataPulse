@@ -23,6 +23,7 @@ import {
   useCallback,
   type PropsWithChildren,
 } from 'react';
+import { setAuthToken, getAuthToken } from '../hooks/useApiData';
 
 // ============================================================================
 // Types
@@ -63,9 +64,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // On mount: check if a valid cookie session already exists.
+  // On mount: verify session via cookie OR stored Bearer token.
   useEffect(() => {
-    fetch(`${API}/auth/me`, { credentials: 'include' })
+    const headers: Record<string, string> = {};
+    const token = getAuthToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    fetch(`${API}/auth/me`, { credentials: 'include', headers })
       .then(res => (res.ok ? res.json() : null))
       .then((data: User | null) => setUser(data))
       .catch(() => setUser(null))
@@ -83,8 +88,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const err = await res.json().catch(() => ({}));
       throw new Error((err as { detail?: string }).detail || 'Login failed');
     }
-    const data: User = await res.json();
-    setUser(data);
+    const data: User & { token?: string } = await res.json();
+    if (data.token) setAuthToken(data.token);
+    setUser({ username: data.username, role: data.role });
   }, []);
 
   const googleLogin = useCallback(async (credential: string) => {
@@ -98,8 +104,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const err = await res.json().catch(() => ({}));
       throw new Error((err as { detail?: string }).detail || 'Google sign-in failed');
     }
-    const data: User = await res.json();
-    setUser(data);
+    const data: User & { token?: string } = await res.json();
+    if (data.token) setAuthToken(data.token);
+    setUser({ username: data.username, role: data.role });
   }, []);
 
   const logout = useCallback(async () => {
@@ -107,6 +114,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       method: 'POST',
       credentials: 'include',
     }).catch(() => {});
+    setAuthToken(null);
     setUser(null);
   }, []);
 
