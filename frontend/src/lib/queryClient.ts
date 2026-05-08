@@ -7,9 +7,10 @@ export const queryClient = new QueryClient({
       // in quick succession (e.g. two components mounting at the same time).
       staleTime: 4_000,
 
-      // Retry failed requests twice with default exponential backoff before
-      // surfacing an error to the UI.
-      retry: 2,
+      // Never retry auth failures — they redirect immediately to /login.
+      // Retry other errors once with backoff.
+      retry: (failureCount, error) =>
+        (error as Error).message === 'UNAUTHENTICATED' ? false : failureCount < 1,
 
       // Stop polling automatically when the browser tab loses focus.
       // This is the primary reason to use React Query over raw setInterval:

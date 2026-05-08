@@ -31,8 +31,13 @@ const WS_URL = import.meta.env.VITE_WEBSOCKET_URL || 'ws://localhost:8000/ws';
 
 async function apiFetch<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: 'include',   // send the httpOnly auth cookie automatically
+    credentials: 'include',
   });
+  if (res.status === 401) {
+    // Session expired or never set — hard redirect so the login page clears state
+    window.location.replace('/login');
+    throw new Error('UNAUTHENTICATED');
+  }
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
   return res.json() as Promise<T>;
 }
