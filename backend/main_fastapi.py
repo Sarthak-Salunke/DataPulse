@@ -118,11 +118,25 @@ DB_CONFIG = {
     'port':     os.getenv('DB_PORT', '5432'),
     'database': os.getenv('DB_NAME', 'fraud_detection'),
     'user':     os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', '12345'),
+    'password': os.getenv('DB_PASSWORD', ''),
 }
 
 # Module-level pool — created at startup, closed at shutdown.
 _pool: Optional[pg_pool.ThreadedConnectionPool] = None
+
+
+def _make_pool() -> pg_pool.ThreadedConnectionPool:
+    """
+    Build the connection pool from DATABASE_URL (cloud) or DB_* vars (local).
+    Appends sslmode=require for Supabase / Neon / any cloud Postgres that
+    needs it — ignored if already present in the URL.
+    """
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        if "sslmode" not in db_url:
+            db_url += ("&" if "?" in db_url else "?") + "sslmode=require"
+        return pg_pool.ThreadedConnectionPool(minconn=2, maxconn=10, dsn=db_url)
+    return pg_pool.ThreadedConnectionPool(minconn=2, maxconn=10, **DB_CONFIG)
 
 
 @contextmanager
@@ -668,17 +682,20 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.on_event("startup")
 async def startup_event():
     global _pool
-    _pool = pg_pool.ThreadedConnectionPool(minconn=2, maxconn=10, **DB_CONFIG)
-    _build_users()  # hash admin password from .env once at startup
-    init_cape_pipeline(deployment_day=0)
+    _pool = _make_pool()
+    _build_users()
+    try:
+        init_cape_pipeline(deployment_day=0)
+    except Exception as e:
+        # CAPE model files may not be present on first deploy — non-fatal.
+        print(f"[startup] CAPE init skipped: {e}")
     print("\n" + "=" * 60)
-    print("🚀  Fraud Detection API  v2.0.0")
+    print("Fraud Detection API  v2.0.0")
     print("=" * 60)
-    print(f"  REST : http://localhost:8000")
-    print(f"  WS   : ws://localhost:8000/ws")
-    print(f"  Docs : http://localhost:8000/docs")
+    print(f"  REST : /api/health  /api/dashboard/metrics")
+    print(f"  WS   : /ws")
+    print(f"  Docs : /docs")
     print(f"  Pool : min=2  max=10  connections")
-    print(f"  CAPE : /api/cape/score  /api/cape/status")
     print("=" * 60 + "\n")
     asyncio.create_task(poll_new_fraud_transactions())
 
