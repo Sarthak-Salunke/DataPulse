@@ -66,7 +66,7 @@ export const LandingHeader = () => {
     <nav className={`nav-bar${scrolled ? ' scrolled' : ''}`}>
       <div className="nav-inner">
         <Link to="/" className="brand-row">
-          <div className="brand-mark">D</div>DataPulse
+          DataPulse
         </Link>
         <div className="nav-links">
           <a href="#how" onClick={smoothScroll}>How it works</a>
@@ -275,7 +275,7 @@ export const Footer = () => (
       <div className="lp-foot-grid">
         <div>
           <div className="brand-row" style={{ marginBottom: 14 }}>
-            <div className="brand-mark">D</div>DataPulse
+            DataPulse
           </div>
           <div style={{ color: 'var(--fg-3)', maxWidth: 260, lineHeight: 1.55 }}>
             Real-time fraud detection for card networks, issuers and payment processors.
