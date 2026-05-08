@@ -44,17 +44,17 @@ function AssistantBubble({ msg }: { msg: AssistantMessage }) {
   return (
     <div
       style={{
-        background: 'var(--bg-elevated)',
-        border: '1px solid var(--border)',
+        background: 'var(--ink-2)',
+        border: '1px solid var(--rule)',
         borderRadius: '8px',
         padding: '12px 14px',
         fontSize: '13px',
         lineHeight: '1.5',
-        color: 'var(--text-primary)',
+        color: 'var(--fg)',
       }}
     >
       {/* Pass 2 natural language insight */}
-      <p style={{ margin: '0 0 10px', color: 'var(--text-primary)' }}>
+      <p style={{ margin: '0 0 10px', color: 'var(--fg)' }}>
         {msg.summary}
       </p>
 
@@ -76,8 +76,8 @@ function AssistantBubble({ msg }: { msg: AssistantMessage }) {
           style={{
             display: 'inline-flex',
             flexDirection: 'column',
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border)',
+            background: 'var(--ink-1)',
+            border: '1px solid var(--rule)',
             borderRadius: '8px',
             padding: '10px 18px',
             marginTop: '8px',
@@ -85,11 +85,11 @@ function AssistantBubble({ msg }: { msg: AssistantMessage }) {
         >
           <span
             style={{
-              fontFamily: 'var(--font-label)',
+              fontFamily: 'var(--mono)',
               fontSize: '9px',
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
-              color: 'var(--cyan)',
+              color: 'var(--brand)',
               opacity: 0.7,
               marginBottom: '4px',
             }}
@@ -98,10 +98,10 @@ function AssistantBubble({ msg }: { msg: AssistantMessage }) {
           </span>
           <span
             style={{
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--mono)',
               fontSize: '22px',
               fontWeight: 700,
-              color: 'var(--text-primary)',
+              color: 'var(--fg)',
             }}
           >
             {String(msg.rows![0]?.[msg.columns![1]] ?? msg.rows![0]?.[msg.columns![0]] ?? '—')}
@@ -124,10 +124,10 @@ function AssistantBubble({ msg }: { msg: AssistantMessage }) {
             onClick={() => setShowSQL((s) => !s)}
             style={{
               background: 'none',
-              border: '1px solid var(--border)',
+              border: '1px solid var(--rule)',
               borderRadius: '4px',
-              color: 'var(--text-muted)',
-              fontFamily: 'var(--font-label)',
+              color: 'var(--fg-3)',
+              fontFamily: 'var(--mono)',
               fontSize: '10px',
               padding: '2px 8px',
               cursor: 'pointer',
@@ -140,9 +140,9 @@ function AssistantBubble({ msg }: { msg: AssistantMessage }) {
         {msg.row_count !== undefined && (
           <span
             style={{
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--mono)',
               fontSize: '10px',
-              color: 'var(--text-muted)',
+              color: 'var(--fg-3)',
             }}
           >
             {msg.row_count} row{msg.row_count !== 1 ? 's' : ''} returned
@@ -155,10 +155,10 @@ function AssistantBubble({ msg }: { msg: AssistantMessage }) {
           style={{
             marginTop: '8px',
             padding: '10px',
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border)',
+            background: 'var(--ink-1)',
+            border: '1px solid var(--rule)',
             borderRadius: '6px',
-            fontFamily: 'var(--font-mono)',
+            fontFamily: 'var(--mono)',
             fontSize: '11px',
             color: 'var(--text-secondary)',
             overflowX: 'auto',
@@ -255,6 +255,7 @@ export default function FraudChatPanel() {
       <button
         onClick={() => setOpen((o) => !o)}
         title="Fraud Analyst Chatbot"
+        className={`btn${open ? ' primary' : ''}`}
         style={{
           position: 'fixed',
           bottom: '28px',
@@ -263,15 +264,9 @@ export default function FraudChatPanel() {
           width: '48px',
           height: '48px',
           borderRadius: '50%',
-          border: '1px solid var(--cyan)',
-          background: open ? 'var(--cyan)' : 'var(--bg-elevated)',
-          color: open ? 'var(--bg-void)' : 'var(--cyan)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
+          padding: 0,
           justifyContent: 'center',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-          transition: 'background 0.2s, color 0.2s',
+          boxShadow: open ? '0 4px 24px var(--brand-glow)' : '0 4px 24px rgba(0,0,0,0.4)',
           fontSize: '20px',
           lineHeight: 1,
         }}
@@ -282,6 +277,7 @@ export default function FraudChatPanel() {
 
       {/* ── Slide-in chat panel ── */}
       <div
+        className="panel"
         style={{
           position: 'fixed',
           top: 0,
@@ -291,10 +287,13 @@ export default function FraudChatPanel() {
           zIndex: 1000,
           display: 'flex',
           flexDirection: 'column',
-          background: 'var(--bg-elevated)',
-          borderLeft: '1px solid var(--border)',
+          borderRadius: 0,
+          borderTop: 'none',
+          borderBottom: 'none',
+          borderRight: 'none',
+          padding: 0,
           boxShadow: '-8px 0 40px rgba(0,0,0,0.5)',
-          transition: 'right 0.28s cubic-bezier(0.4,0,0.2,1)',
+          transition: 'right 0.28s var(--ease-out)',
         }}
         aria-hidden={!open}
       >
@@ -302,7 +301,7 @@ export default function FraudChatPanel() {
         <div
           style={{
             padding: '16px 18px 14px',
-            borderBottom: '1px solid var(--border)',
+            borderBottom: '1px solid var(--rule)',
             flexShrink: 0,
             position: 'relative',
           }}
@@ -314,18 +313,18 @@ export default function FraudChatPanel() {
               left: 0,
               right: 0,
               height: '2px',
-              background: 'linear-gradient(90deg, var(--cyan), transparent)',
+              background: 'linear-gradient(90deg, var(--brand), transparent)',
               opacity: 0.5,
             }}
           />
           <div
             style={{
-              fontFamily: 'var(--font-label)',
+              fontFamily: 'var(--mono)',
               fontSize: '10px',
               fontWeight: 600,
               letterSpacing: '0.15em',
               textTransform: 'uppercase',
-              color: 'var(--cyan)',
+              color: 'var(--brand)',
               opacity: 0.7,
               marginBottom: '2px',
             }}
@@ -334,9 +333,9 @@ export default function FraudChatPanel() {
           </div>
           <div
             style={{
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--mono)',
               fontSize: '13px',
-              color: 'var(--text-primary)',
+              color: 'var(--fg)',
             }}
           >
             Ask anything about fraud data
@@ -359,8 +358,8 @@ export default function FraudChatPanel() {
             <div
               style={{
                 textAlign: 'center',
-                color: 'var(--text-muted)',
-                fontFamily: 'var(--font-mono)',
+                color: 'var(--fg-3)',
+                fontFamily: 'var(--mono)',
                 fontSize: '12px',
                 marginTop: '40px',
                 lineHeight: 1.8,
@@ -382,12 +381,12 @@ export default function FraudChatPanel() {
               <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <div
                   style={{
-                    background: 'var(--cyan)',
-                    color: 'var(--bg-void)',
+                    background: 'var(--brand)',
+                    color: 'var(--ink-0)',
                     borderRadius: '8px',
                     padding: '8px 12px',
                     maxWidth: '80%',
-                    fontFamily: 'var(--font-mono)',
+                    fontFamily: 'var(--mono)',
                     fontSize: '13px',
                     lineHeight: 1.4,
                   }}
@@ -420,7 +419,7 @@ export default function FraudChatPanel() {
                     width: '6px',
                     height: '6px',
                     borderRadius: '50%',
-                    background: 'var(--cyan)',
+                    background: 'var(--brand)',
                     opacity: 0.6,
                     animation: `chatPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
                   }}
@@ -440,7 +439,7 @@ export default function FraudChatPanel() {
         <div
           style={{
             padding: '12px 14px',
-            borderTop: '1px solid var(--border)',
+            borderTop: '1px solid var(--rule)',
             flexShrink: 0,
             display: 'flex',
             gap: '8px',
@@ -454,13 +453,13 @@ export default function FraudChatPanel() {
             disabled={loading}
             style={{
               flex: 1,
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border)',
+              background: 'var(--ink-1)',
+              border: '1px solid var(--rule)',
               borderRadius: '6px',
               padding: '8px 12px',
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--mono)',
               fontSize: '12px',
-              color: 'var(--text-primary)',
+              color: 'var(--fg)',
               outline: 'none',
               opacity: loading ? 0.5 : 1,
             }}
@@ -469,12 +468,12 @@ export default function FraudChatPanel() {
             onClick={sendMessage}
             disabled={loading || !input.trim()}
             style={{
-              background: 'var(--cyan)',
-              color: 'var(--bg-void)',
+              background: 'var(--brand)',
+              color: 'var(--ink-0)',
               border: 'none',
               borderRadius: '6px',
               padding: '8px 14px',
-              fontFamily: 'var(--font-label)',
+              fontFamily: 'var(--mono)',
               fontSize: '11px',
               fontWeight: 600,
               letterSpacing: '0.06em',

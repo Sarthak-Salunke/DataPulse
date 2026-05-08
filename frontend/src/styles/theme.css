@@ -1,100 +1,72 @@
+/* ── theme.css — token bridge ──────────────────────────────────────
+   Imports the unified DataPulse design system, then aliases the
+   project's old variable names to the new ones so nothing breaks.
+*/
+
+@import './datapulse.css';
+
 :root {
-  /* ── Background Scale ── */
-  --bg-void: #020810;
-  --bg-deep: #050E1C;
-  --bg-surface: #0A1828;
-  --bg-elevated: #0F2038;
-  --bg-card: #0D1E34;
+  /* ── Aliases for legacy variable names ─────────────── */
+  --bg-void:      var(--ink-0);
+  --bg-deep:      var(--ink-1);
+  --bg-surface:   var(--ink-1);
+  --bg-elevated:  var(--ink-2);
+  --bg-inline:    var(--ink-3);
 
-  /* ── Accent: Cyber Cyan ── */
-  --cyan: #00CFFF;
-  --cyan-dim: rgba(0, 207, 255, 0.12);
-  --cyan-border: rgba(0, 207, 255, 0.22);
-  --cyan-glow: rgba(0, 207, 255, 0.08);
+  --border:       var(--rule);
+  --border-strong: var(--rule-strong);
 
-  /* ── Semantic: Fraud ── */
-  --fraud: #FF2D55;
-  --fraud-dim: rgba(255, 45, 85, 0.12);
-  --fraud-border: rgba(255, 45, 85, 0.3);
+  --text-primary:   var(--fg);
+  --text-secondary: var(--fg-2);
+  --text-muted:     var(--fg-3);
+  --text-label:     var(--fg-4);
 
-  /* ── Semantic: Safe ── */
-  --safe: #00E87A;
-  --safe-dim: rgba(0, 232, 122, 0.1);
+  --cyan:        var(--brand);
+  --accent-cyan: var(--brand);
+  --accent:      var(--brand);
+  --accent-soft: var(--brand-soft);
+  --cyan-dim:    var(--brand-soft);
+  --cyan-border: var(--brand-glow);
+  --cyan-glow:   var(--brand-glow);
 
-  /* ── Semantic: Warning ── */
-  --amber: #FFB319;
-  --amber-dim: rgba(255, 179, 25, 0.12);
+  --red:         var(--risk);
+  --fraud:       var(--risk);
+  --fraud-dim:   var(--risk-soft);
+  --fraud-border:var(--risk-glow);
+  --green:       var(--safe);
+  --safe-dim:    var(--safe-soft);
+  --yellow:      var(--amber);
+  --amber-dim:   var(--amber-soft);
 
-  /* ── Text ── */
-  --text-primary: #C8DEFF;
-  --text-secondary: #5D82A8;
-  --text-muted: #2E4A6A;
-  --text-bright: #E8F4FF;
+  /* Text aliases the landing page uses */
+  --text-bright: var(--fg);
+  --accent-text: var(--brand);
 
-  /* ── Borders ── */
-  --border: rgba(0, 207, 255, 0.12);
-  --border-strong: rgba(0, 207, 255, 0.25);
+  /* Card background */
+  --bg-card:     var(--ink-2);
 
-  /* ── Typography ── */
-  --font-display: 'Poppins', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  --font-body: 'Poppins', sans-serif;
-  --font-label: 'Poppins', sans-serif;
-
-  /* ── Radius ── */
-  --r-sm: 4px;
-  --r-md: 8px;
-  --r-lg: 12px;
-  --r-xl: 16px;
-
-  /* ── Backward-compat aliases ── */
-  --bg-color-dark: var(--bg-void);
-  --sidebar-bg-dark: var(--bg-deep);
-  --panel-bg-dark: rgba(10, 24, 40, 0.85);
-  --panel-border-dark: var(--border);
-  --border-color-dark: var(--border);
-  --text-primary-dark: var(--text-bright);
-  --text-secondary-dark: var(--text-secondary);
-  --accent-primary: var(--cyan);
-  --accent-text: var(--cyan);
+  /* Font aliases the landing page uses */
+  --font-mono:    var(--mono);
+  --font-label:   var(--mono);
+  --font-sans:    var(--sans);
+  --font-serif:   var(--serif);
+  --font-display: var(--sans);
+  --font-body:    var(--sans);
 }
 
-.light {
-  --bg-void: #F8FAFC;
-  --bg-deep: #F0F4F8;
-  --bg-surface: #FFFFFF;
-  --bg-elevated: #F8FAFC;
-  --bg-card: #FFFFFF;
+/* Light theme overrides — only used when <html class="light"> */
+html.light {
+  --ink-0: #f7f8fa;
+  --ink-1: #ffffff;
+  --ink-2: #f1f3f6;
+  --ink-3: #e8ecf1;
+  --rule:  #e1e5ec;
+  --rule-strong: #c9cfd9;
 
-  --text-primary: #334155;
-  --text-secondary: #64748B;
-  --text-muted: #94A3B8;
-  --text-bright: #0F172A;
+  --fg:    #15171c;
+  --fg-2:  #4a5060;
+  --fg-3:  #7c8290;
+  --fg-4:  #a4aab5;
 
-  --border: rgba(0, 0, 0, 0.1);
-  --border-strong: rgba(0, 0, 0, 0.2);
-
-  --bg-color-dark: var(--bg-void);
-  --sidebar-bg-dark: var(--bg-deep);
-  --panel-bg-dark: rgba(255, 255, 255, 0.9);
-  --panel-border-dark: rgba(0, 0, 0, 0.08);
-  --border-color-dark: var(--border);
-  --text-primary-dark: var(--text-bright);
-  --text-secondary-dark: var(--text-secondary);
-}
-
-/* ── Scrollbar ── */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-deep);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--cyan);
+  background: var(--ink-0);
 }

@@ -35,6 +35,7 @@ import asyncio
 import json
 import sys
 import os
+import uuid
 import psycopg2
 from psycopg2 import pool as pg_pool
 from psycopg2.extras import RealDictCursor
@@ -42,6 +43,13 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+
+try:
+    from google.oauth2 import id_token as _google_id_token
+    from google.auth.transport import requests as _google_requests
+    _GOOGLE_AUTH_AVAILABLE = True
+except ImportError:
+    _GOOGLE_AUTH_AVAILABLE = False
 
 load_dotenv()
 
@@ -135,8 +143,8 @@ def _make_pool() -> pg_pool.ThreadedConnectionPool:
     if db_url:
         if "sslmode" not in db_url:
             db_url += ("&" if "?" in db_url else "?") + "sslmode=require"
-        return pg_pool.ThreadedConnectionPool(minconn=2, maxconn=10, dsn=db_url)
-    return pg_pool.ThreadedConnectionPool(minconn=2, maxconn=10, **DB_CONFIG)
+        return pg_pool.ThreadedConnectionPool(minconn=1, maxconn=10, dsn=db_url)
+    return pg_pool.ThreadedConnectionPool(minconn=1, maxconn=10, **DB_CONFIG)
 
 
 @contextmanager
@@ -220,9 +228,25 @@ class StatementResponse(BaseModel):
     data: List[StatementTransaction]
 
 
+class IngestRequest(BaseModel):
+    cc_num: str
+    merchant: str
+    category: str
+    amt: float
+    merch_lat: float = 0.0
+    merch_long: float = 0.0
+    distance: float = 0.0
+    age: int = 0
+    channel: str = "web"
+
+
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class GoogleLoginRequest(BaseModel):
+    credential: str
 
 
 class UserInfo(BaseModel):
@@ -297,10 +321,8 @@ def _get_dashboard_metrics() -> dict:
                 SELECT COUNT(*)::INT AS total
                 FROM (
                     SELECT cc_num FROM fraud_transaction
-                    WHERE trans_time >= CURRENT_DATE
                     UNION ALL
                     SELECT cc_num FROM non_fraud_transaction
-                    WHERE trans_time >= CURRENT_DATE
                 ) t
             """)
             total = (cur.fetchone() or {}).get('total', 0)
@@ -308,7 +330,6 @@ def _get_dashboard_metrics() -> dict:
             cur.execute("""
                 SELECT COUNT(*)::INT AS fraud_count
                 FROM fraud_transaction
-                WHERE trans_time >= CURRENT_DATE
             """)
             fraud = (cur.fetchone() or {}).get('fraud_count', 0)
 
@@ -355,7 +376,6 @@ def _get_all_transactions(limit: int) -> list:
                        merchant, category, amt AS amount, distance,
                        'Fraud' AS status, is_fraud * 100 AS confidence
                 FROM fraud_transaction
-                WHERE trans_time >= CURRENT_DATE - INTERVAL '1 day'
 
                 UNION ALL
 
@@ -363,7 +383,6 @@ def _get_all_transactions(limit: int) -> list:
                        merchant, category, amt AS amount, distance,
                        'Normal' AS status, NULL AS confidence
                 FROM non_fraud_transaction
-                WHERE trans_time >= CURRENT_DATE - INTERVAL '1 day'
 
                 ORDER BY time DESC
                 LIMIT %s
@@ -607,6 +626,92 @@ def customer_statement(
 
 
 # ============================================================================
+# Transaction Ingest Endpoint
+# ============================================================================
+
+def _score_transaction(body: IngestRequest) -> tuple[int, float]:
+    """
+    Returns (is_fraud: 0|1, confidence: 0-100).
+    Tries the CAPE pipeline first; falls back to a rule-based heuristic if
+    the pipeline was not loaded (model files absent on this deployment).
+    """
+    # Access the CAPE pipeline through sys.modules so we always see the
+    # current value even though init_cape_pipeline() runs after imports.
+    cape_mod = sys.modules.get('cape_router')
+    pipeline = getattr(cape_mod, '_pipeline', None) if cape_mod else None
+
+    if pipeline is not None:
+        try:
+            from cape import Transaction as CAPETxn, Channel as CAPEChannel
+            try:
+                ch = CAPEChannel(body.channel.lower())
+            except ValueError:
+                ch = CAPEChannel.WEB
+            txn = CAPETxn(
+                trans_num=uuid.uuid4().hex,
+                cc_num=body.cc_num,
+                amt=body.amt,
+                merchant=body.merchant,
+                category=body.category,
+                channel=ch,
+            )
+            result = pipeline.evaluate(txn)
+            is_fraud = 1 if result.decision == "BLOCK" else 0
+            return is_fraud, round(result.point_estimate * 100, 1)
+        except Exception:
+            pass  # fall through to heuristic
+
+    # Heuristic fallback: risk driven by amount + category
+    HIGH_RISK_CATS = {'shopping_net', 'misc_net', 'misc_pos', 'grocery_net', 'travel'}
+    risk = min(1.0, body.amt / 3000.0)
+    if body.category in HIGH_RISK_CATS:
+        risk = min(1.0, risk + 0.25)
+    if body.amt > 1000:
+        risk = min(1.0, risk + 0.15)
+    is_fraud = 1 if risk > 0.45 else 0
+    return is_fraud, round(risk * 100, 1)
+
+
+@app.post("/api/transactions/ingest")
+def ingest_transaction(body: IngestRequest):
+    """
+    Accept a raw transaction, score it, and persist it to the DB.
+    Fraud → fraud_transaction  (background poller picks it up, broadcasts via WS)
+    Normal → non_fraud_transaction  (appears in next REST poll)
+    """
+    trans_num  = uuid.uuid4().hex
+    trans_time = datetime.now()
+    is_fraud, confidence = _score_transaction(body)
+    table = "fraud_transaction" if is_fraud else "non_fraud_transaction"
+
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                INSERT INTO {table}
+                    (cc_num, trans_time, trans_num, category, merchant,
+                     amt, merch_lat, merch_long, distance, age, is_fraud)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    body.cc_num, trans_time, trans_num,
+                    body.category, body.merchant, body.amt,
+                    body.merch_lat, body.merch_long,
+                    body.distance, body.age, is_fraud,
+                ),
+            )
+        conn.commit()
+
+    return {
+        "trans_num":  trans_num,
+        "decision":   "FRAUD" if is_fraud else "APPROVED",
+        "confidence": confidence,
+        "table":      table,
+        "timestamp":  trans_time.isoformat(),
+    }
+
+
+# ============================================================================
 # Auth Endpoints  (public — no Depends guard)
 # ============================================================================
 
@@ -632,6 +737,42 @@ def login(body: LoginRequest, response: Response):
         secure=False,           # set to True when serving over HTTPS in production
     )
     return {"username": user["username"], "role": user["role"]}
+
+
+@app.post("/auth/google", response_model=UserInfo)
+def google_auth(body: GoogleLoginRequest, response: Response):
+    """
+    Verify a Google ID token issued by the frontend (via Google Identity Services).
+    On success, sets the same httpOnly JWT cookie as the regular login endpoint.
+    Requires GOOGLE_CLIENT_ID to be set in .env.
+    """
+    google_client_id = os.getenv("GOOGLE_CLIENT_ID", "")
+    if not google_client_id:
+        raise HTTPException(status_code=503, detail="Google OAuth not configured — set GOOGLE_CLIENT_ID in .env")
+    if not _GOOGLE_AUTH_AVAILABLE:
+        raise HTTPException(status_code=503, detail="google-auth package not installed — run: pip install google-auth")
+    try:
+        idinfo = _google_id_token.verify_oauth2_token(
+            body.credential,
+            _google_requests.Request(),
+            google_client_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=f"Invalid Google token: {exc}")
+
+    email: str = idinfo.get("email", "")
+    name: str = idinfo.get("name") or email.split("@")[0]
+
+    token = _create_token({"sub": name, "role": "analyst", "email": email})
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=JWT_EXPIRE_MIN * 60,
+        secure=False,
+    )
+    return UserInfo(username=name, role="analyst")
 
 
 @app.post("/auth/logout")

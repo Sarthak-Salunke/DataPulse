@@ -8,7 +8,9 @@
 //   2. login() POSTs credentials to /auth/login — the server sets the
 //      httpOnly cookie directly in the response; the token never touches
 //      JavaScript memory, making it immune to XSS attacks.
-//   3. logout() POSTs to /auth/logout — the server clears the cookie.
+//   3. googleLogin() POSTs a Google ID token to /auth/google — the server
+//      verifies it and sets the same httpOnly cookie.
+//   4. logout() POSTs to /auth/logout — the server clears the cookie.
 //
 // All fetch calls include { credentials: 'include' } so the browser
 // automatically attaches the cookie on every request.
@@ -33,8 +35,9 @@ interface User {
 
 interface AuthState {
   user: User | null;
-  isLoading: boolean;   // true while the initial /auth/me check is in-flight
+  isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -61,7 +64,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState(true);
 
   // On mount: check if a valid cookie session already exists.
-  // This restores the session after a page refresh without re-entering credentials.
   useEffect(() => {
     fetch(`${API}/auth/me`, { credentials: 'include' })
       .then(res => (res.ok ? res.json() : null))
@@ -73,16 +75,29 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const login = useCallback(async (username: string, password: string) => {
     const res = await fetch(`${API}/auth/login`, {
       method: 'POST',
-      credentials: 'include',         // receive the Set-Cookie header
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     });
-
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error((err as { detail?: string }).detail || 'Login failed');
     }
+    const data: User = await res.json();
+    setUser(data);
+  }, []);
 
+  const googleLogin = useCallback(async (credential: string) => {
+    const res = await fetch(`${API}/auth/google`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as { detail?: string }).detail || 'Google sign-in failed');
+    }
     const data: User = await res.json();
     setUser(data);
   }, []);
@@ -91,12 +106,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
     await fetch(`${API}/auth/logout`, {
       method: 'POST',
       credentials: 'include',
-    }).catch(() => {});   // best-effort — clear local state regardless
+    }).catch(() => {});
     setUser(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, googleLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

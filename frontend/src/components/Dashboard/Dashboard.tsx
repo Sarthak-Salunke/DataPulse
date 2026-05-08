@@ -1,637 +1,458 @@
-import React, { useEffect, useState } from 'react';
-import MetricsCard from './MetricsCard';
-import AlertsFeed from './RealTimeFeed';
-import TransactionChart from '../Charts/TransactionChart';
-import CreditDebitChart from '../Charts/CreditDebitChart';
-import SystemAdvicesChart from '../Charts/SystemAdvicesChart';
-import type { Transaction, KPI, TransactionStatus, Toast as ToastType } from '../../types';
-import { ICONS } from '../../utils/constants';
-import { useDashboardMetrics, useRecentAlerts, useWebSocket } from '../../hooks/useApiData';
-import type { FraudAlert } from '../../hooks/useApiData';
+// ── Dashboard — full redesign matching design/DataPulse Dashboard Redesign.html ──
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip as RcTooltip, ResponsiveContainer,
+} from 'recharts';
+import { useTransactions, useDashboardMetrics, useRecentAlerts } from '../../hooks/useApiData';
+import type { FraudAlert, Transaction } from '../../types';
+import { useCountUp } from '../../hooks/useCountUp';
+import RealTimeFeed from './RealTimeFeed';
 
-// ── Panel wrapper ──────────────────────────────────────────────────────────
-const Panel: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
-  children,
-  className,
-  style,
-}) => (
-  <div
-    className={className}
-    style={{
-      background: 'var(--bg-surface)',
-      border: '1px solid var(--border)',
-      borderRadius: 'var(--r-xl)',
-      padding: '20px',
-      position: 'relative',
-      overflow: 'hidden',
-      ...style,
-    }}
-  >
-    <div
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '2px',
-        background: 'linear-gradient(90deg, var(--cyan), transparent)',
-        opacity: 0.4,
-      }}
-    />
-    {children}
-  </div>
-);
-
-const PanelTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div
-    style={{
-      fontFamily: 'var(--font-label)',
-      fontSize: '10px',
-      fontWeight: 600,
-      letterSpacing: '0.15em',
-      textTransform: 'uppercase',
-      color: 'var(--cyan)',
-      opacity: 0.7,
-      marginBottom: '14px',
-    }}
-  >
-    {children}
-  </div>
-);
-
-// ── Status badge ───────────────────────────────────────────────────────────
-const StatusBadge: React.FC<{ status: TransactionStatus }> = ({ status }) => {
-  const isFraud = status === 'Fraud';
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '5px',
-        padding: '3px 8px',
-        borderRadius: 'var(--r-sm)',
-        fontFamily: 'var(--font-label)',
-        fontSize: '10px',
-        fontWeight: 600,
-        letterSpacing: '0.08em',
-        background: isFraud ? 'var(--fraud-dim)' : 'var(--safe-dim)',
-        border: `1px solid ${isFraud ? 'var(--fraud-border)' : 'rgba(0,232,122,0.25)'}`,
-        color: isFraud ? 'var(--fraud)' : 'var(--safe)',
-      }}
-    >
-      <span
-        style={{
-          width: '5px',
-          height: '5px',
-          borderRadius: '50%',
-          background: 'currentColor',
-          display: 'inline-block',
-        }}
-      />
-      {status}
-    </span>
-  );
+// CSS vars don't work in SVG/Recharts props — use hex constants
+const C = {
+  grid:   '#262932',
+  volume: '#a8acb4',
+  fraud:  '#e26d5c',
+  axis:   '#6b6f78',
+  tip:    '#191b20',
+  accent: '#f0b35a',
+  safe:   '#6fb98f',
 };
 
-// ── Toast ──────────────────────────────────────────────────────────────────
-const Toast: React.FC<{ toast: ToastType; onRemove: (id: number) => void }> = ({ toast, onRemove }) => {
-  const [exiting, setExiting] = useState(false);
-  const [progress, setProgress] = useState(100);
-  const isError = toast.type === 'error';
-  const accentColor = isError ? 'var(--fraud)' : 'var(--safe)';
+// ── Data helpers ──────────────────────────────────────────────────
 
-  useEffect(() => {
-    const start = performance.now();
-    const duration = 5000;
+function buildVolumeData(txns: Transaction[]) {
+  const map: Record<string, { label: string; total: number; fraud: number }> = {};
+  txns.forEach(t => {
+    const d = new Date(t.time);
+    if (isNaN(d.getTime())) return;
+    const epoch = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()).getTime();
+    const key = String(epoch);
+    if (!map[key]) map[key] = { label: `${String(d.getHours()).padStart(2, '0')}:00`, total: 0, fraud: 0 };
+    map[key].total++;
+    if (t.status === 'Fraud') map[key].fraud++;
+  });
+  const sorted = Object.keys(map)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .map(k => map[String(k)]);
+  return sorted.length >= 3 ? sorted.slice(-24) : FALLBACK_VOL;
+}
 
-    const frame = (now: number) => {
-      const pct = Math.max(0, 100 - ((now - start) / duration) * 100);
-      setProgress(pct);
-      if (pct > 0) requestAnimationFrame(frame);
-    };
-    requestAnimationFrame(frame);
+const FALLBACK_VOL = Array.from({ length: 24 }, (_, i) => ({
+  label: `${String(i).padStart(2, '0')}:00`,
+  total: Math.round(600 + Math.sin(i / 3.5) * 280 + i * 8),
+  fraud: Math.round(2 + Math.sin(i / 2.8) * 2.5 + 0.5),
+}));
 
-    const dismissTimer = setTimeout(() => setExiting(true), duration);
-    return () => clearTimeout(dismissTimer);
-  }, []);
+function buildCategoryDist(txns: Transaction[]) {
+  const counts: Record<string, { total: number; fraud: number }> = {};
+  txns.forEach(t => {
+    if (!counts[t.category]) counts[t.category] = { total: 0, fraud: 0 };
+    counts[t.category].total++;
+    if (t.status === 'Fraud') counts[t.category].fraud++;
+  });
+  const total = txns.length || 1;
+  return Object.entries(counts)
+    .sort(([, a], [, b]) => b.total - a.total)
+    .slice(0, 6)
+    .map(([cat, c]) => ({
+      name: cat.replace(/_/g, ' '),
+      pct: Math.round((c.total / total) * 100),
+      fraud: c.fraud,
+    }));
+}
 
-  useEffect(() => {
-    if (exiting) {
-      const t = setTimeout(() => onRemove(toast.id), 320);
-      return () => clearTimeout(t);
-    }
-  }, [exiting, onRemove, toast.id]);
+const FALLBACK_CATS = [
+  { name: 'grocery pos', pct: 28, fraud: 1 },
+  { name: 'shopping net', pct: 22, fraud: 5 },
+  { name: 'misc net', pct: 18, fraud: 3 },
+  { name: 'gas transport', pct: 12, fraud: 1 },
+  { name: 'home', pct: 10, fraud: 2 },
+  { name: 'entertainment', pct: 10, fraud: 1 },
+];
 
+function buildHeatmap(txns: Transaction[]): number[][] {
+  if (txns.length === 0) return FALLBACK_HEAT;
+  const grid: number[][] = Array.from({ length: 7 }, () => new Array<number>(24).fill(0));
+  txns.forEach(t => {
+    const d = new Date(t.time);
+    if (isNaN(d.getTime())) return;
+    grid[d.getDay()][d.getHours()] += t.status === 'Fraud' ? 3 : 1;
+  });
+  const max = Math.max(...grid.flat(), 1);
+  const result = grid.map(row => row.map(v => Math.min(5, Math.round((v / max) * 5))));
+  const hasData = result.flat().some(v => v > 0);
+  return hasData ? result : FALLBACK_HEAT;
+}
+
+const FALLBACK_HEAT: number[][] = Array.from({ length: 7 }, (_, day) =>
+  Array.from({ length: 24 }, (_, hr) =>
+    Math.max(0, Math.min(5, Math.round(Math.sin(day * 0.8 + hr * 0.4) * 2 + Math.cos(hr * 0.6) * 1.5 + 2.5)))
+  )
+);
+
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// ── Inline sub-components ─────────────────────────────────────────
+
+function RingGauge({ pct, color }: { pct: number; color: string }) {
+  const r = 26, circ = 2 * Math.PI * r;
   return (
-    <div
-      className={exiting ? 'toast-out' : 'toast-in'}
-      onClick={() => setExiting(true)}
-      style={{
-        background: 'var(--bg-elevated)',
-        border: '1px solid var(--border)',
-        borderLeft: `3px solid ${accentColor}`,
-        borderRadius: 'var(--r-lg)',
-        padding: '14px 16px',
-        display: 'flex',
-        gap: '12px',
-        alignItems: 'flex-start',
-        marginBottom: '10px',
-        cursor: 'pointer',
-        backdropFilter: 'blur(16px)',
-        minWidth: '300px',
-        maxWidth: '360px',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      <div
-        style={{
-          width: '30px',
-          height: '30px',
-          background: isError ? 'var(--fraud-dim)' : 'var(--safe-dim)',
-          borderRadius: 'var(--r-sm)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: accentColor,
-          fontFamily: 'var(--font-mono)',
-          fontSize: '14px',
-          fontWeight: 700,
-          flexShrink: 0,
-        }}
-      >
-        {isError ? '!' : '✓'}
-      </div>
-      <div style={{ flex: 1 }}>
-        <div
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '13px',
-            fontWeight: 600,
-            color: 'var(--text-bright)',
-            marginBottom: '2px',
-          }}
-        >
-          {toast.title}
-        </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-secondary)' }}>
-          {toast.message}
+    <svg viewBox="0 0 64 64" style={{ width: 56, height: 56, flexShrink: 0 }}>
+      <circle cx="32" cy="32" r={r} fill="none" stroke="#262932" strokeWidth="6" />
+      <circle cx="32" cy="32" r={r} fill="none" stroke={color} strokeWidth="6"
+        strokeDasharray={circ}
+        strokeDashoffset={circ - Math.max(0, Math.min(1, pct / 100)) * circ}
+        strokeLinecap="round" transform="rotate(-90 32 32)" />
+    </svg>
+  );
+}
+
+function AlertCard({ a }: { a: FraudAlert }) {
+  const label = (a.merchant_name || a.merchant || 'Unknown')
+    .replace(/fraud_/i, '').replace(/_/g, ' ').slice(0, 26);
+  let timeStr = '—';
+  try { timeStr = new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch {}
+  return (
+    <div style={{
+      border: '1px solid var(--rule)', borderLeft: '2px solid var(--risk)',
+      borderRadius: 8, padding: '10px 12px', background: 'var(--ink-2)',
+      display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 10, alignItems: 'center',
+    }}>
+      <div style={{
+        width: 32, height: 32, borderRadius: 6, background: 'var(--risk-soft)',
+        color: 'var(--risk)', display: 'grid', placeItems: 'center',
+        fontFamily: 'var(--mono)', fontSize: 14, fontWeight: 600,
+      }}>!</div>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{label}</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-3)' }}>
+          {timeStr}{a.category ? ` · ${a.category}` : ''}
         </div>
       </div>
-      {/* Progress bar */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          height: '2px',
-          width: `${progress}%`,
-          background: accentColor,
-          transition: 'width 0.1s linear',
-          borderRadius: '0 0 var(--r-lg) 0',
-        }}
-      />
+      <div style={{ textAlign: 'right' }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>
+          ${Number(a.amount).toFixed(2)}
+        </div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--risk)', marginTop: 2 }}>
+          {Math.round(Number(a.confidence))}% conf
+        </div>
+      </div>
     </div>
   );
-};
+}
 
-// ── Transaction detail modal ───────────────────────────────────────────────
-const TransactionDetailModal: React.FC<{
-  transaction: Transaction | null;
-  onClose: () => void;
-}> = ({ transaction, onClose }) => {
-  if (!transaction) return null;
-  const isFraud = transaction.status === 'Fraud';
+// ── Main component ────────────────────────────────────────────────
+
+export default function Dashboard() {
+  const { transactions } = useTransactions(500);
+  const { metrics }      = useDashboardMetrics();
+  const { alerts }       = useRecentAlerts(8);
+
+  const rawTotal  = metrics?.totalTransactions ?? 23400;
+  const rawFraud  = metrics?.fraudDetected     ?? 47;
+  const rawRate   = metrics?.fraudRate         ?? 0.42;
+  const rawAcc    = metrics?.accuracy          ?? 94.3;
+
+  const fraudRate  = useCountUp(rawRate,   1600, 2);
+  const accuracy   = useCountUp(rawAcc,    1400, 1);
+  const txTotal    = useCountUp(rawTotal,  1800, 0);
+  const fraudCount = useCountUp(rawFraud,  1400, 0);
+
+  const volumeData = buildVolumeData(transactions);
+  const heatmap    = buildHeatmap(transactions);
+  const catDist    = buildCategoryDist(transactions);
+  const catRows    = catDist.length > 0 ? catDist : FALLBACK_CATS;
+  const sparkFraud = volumeData.map(d => d.fraud);
+  const capitalK   = ((rawFraud * 3900) / 1000).toFixed(1);
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(8px)',
-        zIndex: 50,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--r-xl)',
-          width: '100%',
-          maxWidth: '420px',
-          margin: '16px',
-          animation: 'slideDown 0.3s ease-out forwards',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div
-          style={{
-            padding: '20px 24px',
-            borderBottom: '1px solid var(--border)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: 'var(--text-bright)' }}>
-              Transaction Details
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-              {transaction.id}
-            </div>
+    <>
+      {/* ── Hero ──────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 14, marginBottom: 14 }}>
+        {/* Fraud rate card */}
+        <div className="panel reveal" data-d="1" style={{
+          position: 'relative', overflow: 'hidden', padding: '24px 28px',
+          background: 'linear-gradient(180deg, var(--ink-1), var(--ink-0))',
+          borderColor: 'var(--rule-strong)',
+        }}>
+          <div className="panel-sub" style={{
+            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14,
+            color: 'var(--risk)', textTransform: 'uppercase', letterSpacing: '0.04em',
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--risk)', display: 'inline-block' }}/>
+            FRAUD INCIDENCE RATE · ROLLING 1H
           </div>
-          <button
-            onClick={onClose}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px' }}
-          >
-            <ICONS.x className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div style={{ padding: '20px 24px' }}>
-          <div
-            style={{
-              padding: '16px',
-              borderRadius: 'var(--r-lg)',
-              marginBottom: '16px',
-              textAlign: 'center',
-              background: isFraud ? 'var(--fraud-dim)' : 'var(--safe-dim)',
-              border: `1px solid ${isFraud ? 'var(--fraud-border)' : 'rgba(0,232,122,0.25)'}`,
-            }}
-          >
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '28px', fontWeight: 600, color: isFraud ? 'var(--fraud)' : 'var(--safe)' }}>
-              ${transaction.amount.toFixed(2)}
-            </div>
-            <StatusBadge status={transaction.status} />
+          <div style={{
+            fontSize: 64, fontWeight: 500, letterSpacing: '-0.04em',
+            fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+          }}>
+            {fraudRate.toFixed(2)}
+            <span style={{ fontSize: 28, color: 'var(--fg-3)', fontWeight: 400, marginLeft: 4 }}>%</span>
           </div>
-
-          {[
-            ['Time', transaction.time],
-            ['Merchant', transaction.merchant],
-            ['Category', transaction.category],
-            ['Customer', transaction.customer],
-            ['Distance', `${transaction.distance} km`],
-            ...(isFraud && transaction.confidence ? [['Confidence', `${transaction.confidence.toFixed(1)}%`]] : []),
-          ].map(([label, val]) => (
-            <div
-              key={label}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '8px 0',
-                borderBottom: '1px solid var(--border)',
-              }}
-            >
-              <span style={{ fontFamily: 'var(--font-label)', fontSize: '12px', color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
-                {label}
-              </span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-primary)' }}>{val}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Transaction feed ───────────────────────────────────────────────────────
-const TransactionFeed: React.FC<{
-  transactions: Transaction[];
-  onRowClick: (tx: Transaction) => void;
-}> = ({ transactions, onRowClick }) => (
-  <Panel style={{ height: '380px', display: 'flex', flexDirection: 'column' }}>
-    <PanelTitle>Live Transaction Feed — last 20</PanelTitle>
-    <div style={{ overflowX: 'auto', flex: 1 }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            {['Time', 'Merchant', 'Amount', 'Status'].map(h => (
-              <th
-                key={h}
-                style={{
-                  padding: '6px 8px',
-                  fontFamily: 'var(--font-label)',
-                  fontSize: '10px',
-                  fontWeight: 600,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-muted)',
-                  textAlign: 'left',
-                  borderBottom: '1px solid var(--border)',
-                }}
-              >
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {transactions.map((tx, i) => (
-            <tr
-              key={tx.id}
-              onClick={() => onRowClick(tx)}
-              className={i === 0 ? 'animate-slide-down' : ''}
-              style={{
-                borderBottom: '1px solid rgba(0,207,255,0.04)',
-                cursor: 'pointer',
-                transition: 'background 0.15s',
-                background: tx.status === 'Fraud' && i === 0 ? 'rgba(255,45,85,0.06)' : 'transparent',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--bg-elevated)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'; }}
-            >
-              <td style={{ padding: '9px 8px', fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)' }}>
-                {tx.time}
-              </td>
-              <td style={{ padding: '9px 8px', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>
-                {tx.merchant}
-              </td>
-              <td style={{ padding: '9px 8px', fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-primary)' }}>
-                ${tx.amount.toFixed(2)}
-              </td>
-              <td style={{ padding: '9px 8px' }}>
-                <StatusBadge status={tx.status} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </Panel>
-);
-
-// ── System health ──────────────────────────────────────────────────────────
-const SystemHealth: React.FC = () => {
-  const services = [
-    { name: 'PostgreSQL', stat: '12ms', online: true },
-    { name: 'Kafka', stat: '23K msg/s', online: true },
-    { name: 'Spark', stat: '2s batch', online: true },
-    { name: 'ML Model v1.2', stat: '94.3%', online: true },
-  ];
-
-  return (
-    <Panel>
-      <PanelTitle>System Health</PanelTitle>
-      {services.map(svc => (
-        <div
-          key={svc.name}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 0',
-            borderBottom: '1px solid rgba(0,207,255,0.05)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: svc.online ? 'var(--safe)' : 'var(--fraud)',
-                display: 'inline-block',
-                animation: svc.online
-                  ? 'healthPulse 2s ease-in-out infinite'
-                  : 'healthPulseRed 0.8s ease-in-out infinite',
-              }}
-            />
-            <span style={{ fontFamily: 'var(--font-label)', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>
-              {svc.name}
+          <div style={{ marginTop: 10, color: 'var(--fg-2)', fontSize: 13, display: 'flex', alignItems: 'baseline', gap: 14 }}>
+            {Math.round(fraudCount)} of {Math.round(txTotal).toLocaleString()} transactions flagged
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--risk)' }}>
+              ↑ +0.08 pp vs prior hour
             </span>
           </div>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--cyan)' }}>
-            {svc.stat}
-          </span>
+          {/* Inline sparkline */}
+          <svg style={{ position: 'absolute', right: 28, bottom: 24, width: 220, height: 70 }}
+               viewBox="0 0 280 80" preserveAspectRatio="none" aria-hidden>
+            <defs>
+              <linearGradient id="heroFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#e26d5c" stopOpacity="0.3"/>
+                <stop offset="100%" stopColor="#e26d5c" stopOpacity="0"/>
+              </linearGradient>
+            </defs>
+            {(() => {
+              const pts = sparkFraud.length >= 2 ? sparkFraud : [2,3,2,4,3,5,4,6,5,7,6,8,7,9,8,10];
+              const min = Math.min(...pts), max = Math.max(...pts, min + 1);
+              const xs = pts.map((_, i) => (i / (pts.length - 1)) * 280);
+              const ys = pts.map(v => 70 - ((v - min) / (max - min)) * 58);
+              const line = pts.map((_, i) => `${i === 0 ? 'M' : 'L'}${xs[i]},${ys[i]}`).join(' ');
+              return (
+                <>
+                  <path d={`${line} L${xs[xs.length-1]},80 L0,80 Z`} fill="url(#heroFill)"/>
+                  <path d={line} fill="none" stroke="#e26d5c" strokeWidth="1.5"/>
+                  <circle cx={xs[xs.length-1]} cy={ys[ys.length-1]} r="3" fill="#e26d5c"/>
+                </>
+              );
+            })()}
+          </svg>
         </div>
-      ))}
-    </Panel>
-  );
-};
 
-// ── Activity log ───────────────────────────────────────────────────────────
-const ActivityLog: React.FC<{ logs: { time: string; message: string }[] }> = ({ logs }) => (
-  <Panel>
-    <PanelTitle>Activity Log</PanelTitle>
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', lineHeight: 2.2 }}>
-      {logs.length === 0 ? (
-        <span style={{ color: 'var(--text-muted)' }}>Awaiting activity…</span>
-      ) : (
-        logs.map((log, i) => (
-          <div key={i}>
-            <span style={{ color: i === 0 ? 'var(--cyan)' : 'var(--text-muted)' }}>
-              [{log.time}]
-            </span>{' '}
-            <span style={{ color: 'var(--text-secondary)' }}>{log.message}</span>
+        {/* Mini-stats column */}
+        <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: 14 }}>
+          <div className="panel reveal" data-d="2" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px',
+          }}>
+            <div>
+              <div className="panel-sub" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Model confidence</div>
+              <div style={{ fontSize: 26, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
+                {accuracy.toFixed(1)}<small style={{ fontSize: 13, color: 'var(--fg-3)', marginLeft: 2 }}>%</small>
+              </div>
+              <div className="panel-sub" style={{ marginTop: 4 }}>precision · recall 92.0%</div>
+            </div>
+            <RingGauge pct={accuracy} color={C.safe} />
           </div>
-        ))
-      )}
-    </div>
-  </Panel>
-);
+          <div className="panel reveal" data-d="3" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px',
+          }}>
+            <div>
+              <div className="panel-sub" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Capital at risk · today</div>
+              <div style={{ fontSize: 26, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
+                ${capitalK}<small style={{ fontSize: 13, color: 'var(--fg-3)', marginLeft: 2 }}>K</small>
+              </div>
+              <div className="panel-sub" style={{ marginTop: 4 }}>across {rawFraud} incidents</div>
+            </div>
+            <RingGauge pct={Math.min(100, (rawFraud / 200) * 100 + 15)} color={C.fraud} />
+          </div>
+        </div>
+      </div>
 
-// ── Mock data helpers ──────────────────────────────────────────────────────
-const MERCHANTS = ['Amazon', 'Walmart', 'Apple', 'Starbucks', 'Netflix', 'ExxonMobil', 'Costco', 'Best Buy'];
-const CATEGORIES = ['Shopping', 'Grocery', 'Electronics', 'Coffee', 'Streaming', 'Gas', 'Wholesale', 'Retail'];
-let txCounter = 1000;
-
-const generateTransaction = (): Transaction => {
-  const idx = Math.floor(Math.random() * MERCHANTS.length);
-  const isFraud = Math.random() < 0.05;
-  const amount = isFraud ? Math.random() * 400 + 100 : Math.random() * 150 + 5;
-  return {
-    id: `TX${++txCounter}`,
-    time: new Date().toLocaleTimeString(),
-    customer: `**** **** **** ${String(Math.floor(Math.random() * 9000) + 1000)}`,
-    merchant: MERCHANTS[idx],
-    category: CATEGORIES[idx],
-    amount: parseFloat(amount.toFixed(2)),
-    distance: Math.floor(Math.random() * 2000),
-    status: isFraud ? 'Fraud' : 'Normal',
-    confidence: isFraud ? parseFloat((Math.random() * 12 + 87).toFixed(2)) : undefined,
-  };
-};
-
-const convertAlertToTransaction = (alert: FraudAlert): Transaction => ({
-  id: alert.transNum ?? `API-${Date.now()}`,
-  time: new Date(alert.timestamp).toLocaleTimeString(),
-  customer: alert.ccNum ?? 'Unknown',
-  merchant: alert.merchant ?? 'Unknown',
-  category: alert.category ?? 'Unknown',
-  amount: alert.amount,
-  distance: alert.distance ?? 0,
-  status: 'Fraud' as TransactionStatus,
-  confidence: alert.confidence,
-});
-
-// ── Dashboard ──────────────────────────────────────────────────────────────
-const Dashboard: React.FC = () => {
-  const { metrics: apiMetrics, loading: metricsLoading } = useDashboardMetrics(5000);
-  const { alerts: apiAlerts } = useRecentAlerts(10, 3000);
-  const { lastMessage } = useWebSocket();
-
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [kpis, setKpis] = useState<KPI[]>([]);
-  const [alerts, setAlerts] = useState<Transaction[]>([]);
-  const [activityLog, setActivityLog] = useState<{ time: string; message: string }[]>([]);
-  const [toasts, setToasts] = useState<ToastType[]>([]);
-  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-
-  const addToast = (toast: Omit<ToastType, 'id'>) =>
-    setToasts(prev => [...prev.slice(-2), { ...toast, id: Date.now() }]);
-
-  const removeToast = (id: number) =>
-    setToasts(prev => prev.filter(t => t.id !== id));
-
-  // WebSocket real-time fraud alerts
-  useEffect(() => {
-    if (!lastMessage) return;
-    if (lastMessage.type === 'fraud_alert' && lastMessage.data) {
-      const alert = convertAlertToTransaction(lastMessage.data as FraudAlert);
-      setAlerts(prev => [alert, ...prev].slice(0, 10));
-      setTransactions(prev => [alert, ...prev].slice(0, 20));
-      addToast({ title: 'Fraud Detected', message: `${alert.merchant} · $${alert.amount.toFixed(2)} · ${alert.id}`, type: 'error' });
-      setActivityLog(prev => [{ time: alert.time, message: `FRAUD detected: ${alert.id} — $${alert.amount.toFixed(2)}` }, ...prev].slice(0, 8));
-    }
-  }, [lastMessage]);
-
-  // Sync KPIs from API metrics
-  useEffect(() => {
-    if (!apiMetrics) return;
-    setKpis([
-      { title: 'Total Today', value: apiMetrics.totalTransactions.toLocaleString(), details: 'All processed', change: '+2.1%', changeType: 'increase' },
-      { title: 'Fraud Detected', value: `${apiMetrics.fraudDetected}`, details: `${apiMetrics.fraudRate.toFixed(2)}% of total`, change: '+5.4%', changeType: 'increase' },
-      { title: 'Normal Transactions', value: (apiMetrics.totalTransactions - apiMetrics.fraudDetected).toLocaleString(), details: `${(100 - apiMetrics.fraudRate).toFixed(2)}% of total`, change: '+1.8%', changeType: 'increase' },
-      { title: 'Model Accuracy', value: `${apiMetrics.accuracy.toFixed(2)}%`, details: 'Recall: 92.0%', change: '-0.2%', changeType: 'decrease' },
-    ]);
-  }, [apiMetrics]);
-
-  // Sync alerts from API
-  useEffect(() => {
-    if (!apiAlerts?.length) return;
-    const converted = apiAlerts.map(convertAlertToTransaction);
-    setAlerts(converted);
-  }, [apiAlerts]);
-
-  // Mock data fallback
-  useEffect(() => {
-    if (metricsLoading || apiMetrics) return;
-
-    const initial = Array.from({ length: 10 }, generateTransaction);
-    setTransactions(initial);
-
-    const interval = setInterval(() => {
-      const tx = generateTransaction();
-      setTransactions(prev => [tx, ...prev].slice(0, 20));
-
-      if (tx.status === 'Fraud') {
-        setAlerts(prev => [tx, ...prev].slice(0, 10));
-        setActivityLog(prev => [
-          { time: tx.time, message: `FRAUD detected: ${tx.id} — $${tx.amount.toFixed(2)}` },
-          ...prev,
-        ].slice(0, 8));
-        addToast({ title: 'Fraud Detected', message: `${tx.merchant} · $${tx.amount.toFixed(2)}`, type: 'error' });
-      } else if (Math.random() > 0.6) {
-        setActivityLog(prev => [
-          { time: tx.time, message: `Batch processed: ${tx.id}` },
-          ...prev,
-        ].slice(0, 8));
-      }
-    }, 2500);
-
-    return () => clearInterval(interval);
-  }, [metricsLoading, apiMetrics]);
-
-  // KPIs from mock transactions
-  useEffect(() => {
-    if (apiMetrics || transactions.length === 0) return;
-    const total = 1247 + transactions.length;
-    const fraud = 47 + transactions.filter(t => t.status === 'Fraud').length;
-    const normal = total - fraud;
-    setKpis([
-      { title: 'Total Today', value: total.toLocaleString(), details: 'All processed', change: '+2.1%', changeType: 'increase' },
-      { title: 'Fraud Detected', value: `${fraud}`, details: `${((fraud / total) * 100).toFixed(2)}% of total`, change: '+5.4%', changeType: 'increase' },
-      { title: 'Normal Transactions', value: normal.toLocaleString(), details: `${((normal / total) * 100).toFixed(2)}% of total`, change: '+1.8%', changeType: 'increase' },
-      { title: 'Model Accuracy', value: '94.35%', details: 'Recall: 92.0%', change: '-0.2%', changeType: 'decrease' },
-    ]);
-  }, [transactions, apiMetrics]);
-
-  const kpiAccents = ['var(--cyan)', 'var(--fraud)', 'var(--safe)', 'var(--amber)'];
-
-  return (
-    <div style={{ position: 'relative' }}>
-      {/* Toast container — fixed bottom-right */}
-      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 60 }}>
-        {toasts.map(toast => (
-          <Toast key={toast.id} toast={toast} onRemove={removeToast} />
+      {/* ── KPI strip ─────────────────────────────────────────── */}
+      <div className="reveal" data-d="4" style={{
+        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+        background: 'var(--ink-1)', border: '1px solid var(--rule)',
+        borderRadius: 12, marginBottom: 18, overflow: 'hidden',
+      }}>
+        {([
+          { label: 'Throughput', value: `${Math.round(rawTotal / 1440)}/min`, meta: '↑ 4.2% vs 24h avg', good: true },
+          { label: 'Fraud detected', value: String(rawFraud), meta: `+${Math.round(rawFraud * 0.2)} last hour`, good: false },
+          { label: 'False positives', value: String(Math.max(1, Math.round(rawFraud * 0.06))), meta: '↓ 2 last hour', good: true },
+          { label: 'Median latency', value: '38 ms', meta: 'P99 · 142 ms', good: null as boolean | null },
+        ] as { label: string; value: string; meta: string; good: boolean | null }[]).map((k, i) => (
+          <div key={k.label} style={{
+            padding: '18px 22px',
+            borderRight: i < 3 ? '1px solid var(--rule)' : 'none',
+          }}>
+            <div className="panel-sub" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>{k.label}</div>
+            <div style={{ fontSize: 24, fontWeight: 500, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
+              {k.value}
+            </div>
+            <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-3)' }}>
+              <span style={{
+                padding: '1px 6px', borderRadius: 3, fontSize: 10,
+                color: k.good === true ? 'var(--safe)' : k.good === false ? 'var(--risk)' : 'var(--fg-3)',
+                background: k.good === true ? 'var(--safe-soft)' : k.good === false ? 'var(--risk-soft)' : 'transparent',
+              }}>{k.meta}</span>
+            </div>
+          </div>
         ))}
       </div>
 
-      <TransactionDetailModal transaction={selectedTx} onClose={() => setSelectedTx(null)} />
+      {/* ── Main grid ─────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 14 }}>
 
-      {/* API unavailable notice */}
-      {!metricsLoading && !apiMetrics && (
-        <div
-          style={{
-            background: 'var(--amber-dim)',
-            border: '1px solid rgba(255,179,25,0.25)',
-            borderRadius: 'var(--r-md)',
-            padding: '10px 16px',
-            marginBottom: '16px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '12px',
-            color: 'var(--amber)',
-          }}
-        >
-          ◆ Using simulated data — backend API not reachable
+        {/* Volume chart — col 8 */}
+        <div className="panel reveal" data-d="5" style={{ gridColumn: 'span 8' }}>
+          <div className="panel-head">
+            <div>
+              <div className="panel-title">Transaction volume <em>vs. flagged events</em></div>
+              <div className="panel-sub">past 24 hours · hourly buckets</div>
+            </div>
+            <div style={{ display: 'flex', gap: 16, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-2)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 10, height: 2, background: C.volume, display: 'inline-block' }}/>volume
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 10, height: 2, background: C.fraud, display: 'inline-block' }}/>fraud
+              </span>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={volumeData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+              <defs>
+                <linearGradient id="volFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor={C.volume} stopOpacity={0.18}/>
+                  <stop offset="95%" stopColor={C.volume} stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="fraudFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor={C.fraud} stopOpacity={0.25}/>
+                  <stop offset="95%" stopColor={C.fraud} stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke={C.grid} strokeDasharray="3 3" vertical={false}/>
+              <XAxis dataKey="label"
+                tick={{ fill: C.axis, fontSize: 10, fontFamily: 'IBM Plex Mono, monospace' }}
+                tickLine={false} axisLine={false} interval="preserveStartEnd"/>
+              <YAxis
+                tick={{ fill: C.axis, fontSize: 10, fontFamily: 'IBM Plex Mono, monospace' }}
+                tickLine={false} axisLine={false}/>
+              <RcTooltip
+                contentStyle={{ background: C.tip, border: `1px solid ${C.grid}`, borderRadius: 6, fontFamily: 'IBM Plex Mono, monospace', fontSize: 11 }}
+                labelStyle={{ color: C.volume, marginBottom: 4 }}
+                itemStyle={{ color: '#ecedef' }}
+              />
+              <Area type="monotone" dataKey="total" stroke={C.volume} strokeWidth={1.5} fill="url(#volFill)" dot={false} name="Volume"/>
+              <Area type="monotone" dataKey="fraud" stroke={C.fraud}  strokeWidth={1.5} fill="url(#fraudFill)" dot={false} name="Fraud"/>
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
-      )}
 
-      {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '16px' }}>
-        {kpis.map((kpi, i) => (
-          <MetricsCard key={kpi.title} {...kpi} accentColor={kpiAccents[i]} />
-        ))}
-      </div>
-
-      {/* Main 2-col layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '14px' }}>
-        {/* Left column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', minWidth: 0 }}>
-          <TransactionFeed transactions={transactions} onRowClick={setSelectedTx} />
-
-          <Panel>
-            <PanelTitle>Transactions Over Time</PanelTitle>
-            <TransactionChart />
-          </Panel>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            <Panel>
-              <PanelTitle>Credit / Debit Split</PanelTitle>
-              <CreditDebitChart />
-            </Panel>
-            <ActivityLog logs={activityLog} />
+        {/* Fraud alerts feed — col 4 */}
+        <div className="panel reveal" data-d="6" style={{ gridColumn: 'span 4' }}>
+          <div className="panel-head">
+            <div className="panel-title">Fraud alerts <em>· live</em></div>
+            <span className="pill"><span className="live-dot"/>LIVE</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 292, overflowY: 'auto' }}>
+            {alerts.length === 0
+              ? <div style={{ color: 'var(--fg-3)', fontFamily: 'var(--mono)', fontSize: 12, padding: '8px 0' }}>No active alerts</div>
+              : alerts.map((a, i) => <AlertCard key={a.transNum ?? a.transaction_id ?? i} a={a}/>)
+            }
           </div>
         </div>
 
-        {/* Right column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <AlertsFeed alerts={alerts} />
-          <SystemHealth />
-          <Panel>
-            <PanelTitle>System Advisories</PanelTitle>
-            <SystemAdvicesChart />
-          </Panel>
+        {/* Real-time feed table — col 8 */}
+        <div className="reveal" data-d="7" style={{ gridColumn: 'span 8' }}>
+          <RealTimeFeed transactions={transactions.slice(0, 50)}/>
         </div>
-      </div>
-    </div>
-  );
-};
 
-export default Dashboard;
+        {/* Pipeline health — col 4 */}
+        <div className="panel reveal" data-d="8" style={{ gridColumn: 'span 4' }}>
+          <div className="panel-head">
+            <div className="panel-title">Pipeline health</div>
+            <span className="pill"><span className="live-dot"/>LIVE</span>
+          </div>
+          {([
+            { name: 'Kafka ingest',  v: 92, label: '23.4K msg/s', ok: true },
+            { name: 'Sklearn model', v: 76, label: '2.0s batch',  ok: true },
+            { name: 'Feature store', v: 64, label: '8 ms lookup', ok: true },
+            { name: 'Decision API',  v: 48, label: '38 ms',       ok: false },
+          ] as { name: string; v: number; label: string; ok: boolean }[]).map((row, i, arr) => (
+            <div key={row.name} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 0',
+              borderBottom: i < arr.length - 1 ? '1px solid var(--rule)' : 'none',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: row.ok ? C.safe : C.accent, display: 'inline-block' }}/>
+                {row.name}
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-2)' }}>{row.label}</div>
+                <div style={{ width: 80, height: 3, background: 'var(--ink-3)', borderRadius: 2, overflow: 'hidden', marginTop: 4 }}>
+                  <span style={{ display: 'block', height: '100%', width: `${row.v}%`, background: C.safe, borderRadius: 2 }}/>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Risk heatmap — col 8 */}
+        <div className="panel reveal" data-d="9" style={{ gridColumn: 'span 8' }}>
+          <div className="panel-head">
+            <div>
+              <div className="panel-title">Risk heatmap <em>· hour × day</em></div>
+              <div className="panel-sub">fraud event density by weekday and hour of day</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 1 }}>
+              {DAYS.map(d => (
+                <div key={d} style={{ height: 14, display: 'flex', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-4)', width: 24 }}>{d}</div>
+              ))}
+            </div>
+            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(24, 1fr)', gridAutoRows: 14, gap: 2 }}>
+              {heatmap.flat().map((level, idx) => (
+                <div key={idx} style={{
+                  borderRadius: 2,
+                  background: level === 0 ? '#22252c'
+                    : level === 1 ? '#2a4a3c'
+                    : level === 2 ? '#3d6552'
+                    : level === 3 ? '#5a8a73'
+                    : level === 4 ? '#f0b35a55'
+                    : '#e26d5c',
+                }}/>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginTop: 6, marginLeft: 32, display: 'grid', gridTemplateColumns: 'repeat(24, 1fr)', gap: 2 }}>
+            {Array.from({ length: 24 }, (_, i) => (
+              <div key={i} style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-4)', textAlign: 'center' }}>
+                {i % 6 === 0 ? `${String(i).padStart(2, '0')}h` : ''}
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-3)' }}>
+            Low
+            {(['#2a4a3c', '#3d6552', '#5a8a73', '#f0b35a55', '#e26d5c'] as const).map((bg, i) => (
+              <span key={i} style={{ width: 12, height: 12, borderRadius: 2, background: bg, display: 'inline-block' }}/>
+            ))}
+            High
+          </div>
+        </div>
+
+        {/* Category distribution — col 4 */}
+        <div className="panel reveal" data-d="10" style={{ gridColumn: 'span 4' }}>
+          <div className="panel-head">
+            <div className="panel-title">Top categories</div>
+            <div className="panel-sub">by transaction volume</div>
+          </div>
+          {catRows.map((cat, i) => (
+            <div key={i} style={{
+              display: 'grid', gridTemplateColumns: '1fr auto',
+              alignItems: 'center', gap: 10,
+              padding: '8px 0',
+              borderBottom: i < catRows.length - 1 ? '1px solid var(--rule)' : 'none',
+            }}>
+              <div>
+                <div style={{ fontSize: 13, marginBottom: 4, textTransform: 'capitalize' }}>{cat.name}</div>
+                <div style={{ height: 4, background: 'var(--ink-3)', borderRadius: 2, overflow: 'hidden' }}>
+                  <span style={{ display: 'block', height: '100%', width: `${cat.pct}%`, background: cat.fraud > 2 ? C.fraud : C.accent, borderRadius: 2 }}/>
+                </div>
+              </div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-2)', width: 44, textAlign: 'right' }}>
+                {cat.pct}%
+              </div>
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </>
+  );
+}

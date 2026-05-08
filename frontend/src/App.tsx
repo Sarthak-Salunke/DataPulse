@@ -1,16 +1,14 @@
 import { useState, useEffect, createContext, useContext, type PropsWithChildren } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from './lib/queryClient';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from './components/Auth/LoginPage';
-import { LandingHeader, Hero, StatsTicker, CtaSection, Footer } from './components/LandingPage';
-import ProblemSection from './components/ProblemSection';
-import HowItWorks from './components/SolutionSection';
-import FeaturesGrid from './components/VerifiableComputeSection';
-import ArchitectureDiagram from './components/Pipeline/ArchitectureDiagram';
-import Header from './components/Common/Header';
+import { LandingHeader, Hero, HowItWorksSection, FeaturesSection, CtaSection, Footer } from './components/LandingPage';
+import AppShell from './components/Common/AppShell';
 import Dashboard from './components/Dashboard/Dashboard';
+import CaseDetail from './components/Cases/CaseDetail';
 import FraudChatPanel from './components/Chat/FraudChatPanel';
 
 // ── Theme context ──────────────────────────────────────────────────────────
@@ -50,124 +48,60 @@ const ThemeProvider = ({ children }: PropsWithChildren) => {
   );
 };
 
-// ── Auth-gated app content ─────────────────────────────────────────────────
-// Separated so it can call useAuth() which requires being inside AuthProvider.
-function AppContent() {
-  const { user, isLoading, logout } = useAuth();
+// ── ProtectedRoute — redirects to /login if not authenticated ──────────────
+function ProtectedRoute({ children }: PropsWithChildren) {
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
 
-  // While the initial /auth/me check is in-flight, show nothing to avoid
-  // flashing the login page for users who are already authenticated.
   if (isLoading) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          background: 'var(--bg-void)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '13px',
-          color: 'var(--text-muted)',
-        }}
-      >
+      <div style={{
+        minHeight: '100vh',
+        background: 'var(--ink-0)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'var(--mono)',
+        fontSize: '13px',
+        color: 'var(--fg-3)',
+      }}>
         Initialising…
       </div>
     );
   }
 
-  if (!user) return <LoginPage />;
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
 
+  return <>{children}</>;
+}
+
+// ── Landing page (public) ──────────────────────────────────────────────────
+function LandingPage() {
   return (
     <ThemeProvider>
-      <div style={{ background: 'var(--bg-void)', color: 'var(--text-primary)', minHeight: '100vh' }}>
-
-        {/* ── Slim user bar ── */}
-        <div
-          style={{
-            position: 'fixed',
-            top: 0, right: 0,
-            zIndex: 100,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '6px 16px',
-            background: 'var(--bg-elevated)',
-            borderBottom: '1px solid var(--border)',
-            borderLeft: '1px solid var(--border)',
-            borderBottomLeftRadius: 'var(--r-lg)',
-          }}
-        >
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-secondary)' }}>
-            {user.username}
-          </span>
-          <span style={{ fontFamily: 'var(--font-label)', fontSize: '9px', color: 'var(--cyan)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-            {user.role}
-          </span>
-          <button
-            onClick={logout}
-            style={{
-              background: 'none',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--r-sm)',
-              color: 'var(--text-muted)',
-              fontFamily: 'var(--font-label)',
-              fontSize: '10px',
-              padding: '2px 8px',
-              cursor: 'pointer',
-              letterSpacing: '0.06em',
-            }}
-          >
-            Sign out
-          </button>
-        </div>
-
-        {/* ── Landing nav ── */}
+      <div style={{ background: 'var(--ink-0)', color: 'var(--fg)', minHeight: '100vh' }}>
         <LandingHeader />
-
         <main>
-          {/* ── Hero ── */}
           <Hero />
-
-          {/* ── Stats ticker ── */}
-          <StatsTicker />
-
-          {/* ── The Problem ── */}
-          <ProblemSection />
-
-          {/* ── How It Works (pinned scroll steps) ── */}
-          <HowItWorks />
-
-          {/* ── Features grid ── */}
-          <FeaturesGrid />
-
-          {/* ── Architecture pipeline ── */}
-          <ArchitectureDiagram />
-
-          {/* ── CTA ── */}
+          <HowItWorksSection />
+          <FeaturesSection />
           <CtaSection />
-
-          {/* ── Live Dashboard ── */}
-          <section
-            id="dashboard"
-            style={{
-              padding: '80px 32px 100px',
-              background: 'var(--bg-void)',
-              borderTop: '1px solid var(--border)',
-            }}
-          >
-            <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-              <Header />
-              <Dashboard />
-            </div>
-          </section>
         </main>
-
-        {/* ── Footer ── */}
         <Footer />
+        {/* Single fixed fade — covers every section uniformly as you scroll */}
+        <div className="lp-page-fade" aria-hidden="true" />
       </div>
+    </ThemeProvider>
+  );
+}
 
-      {/* ── Fraud Analyst Chatbot — fixed overlay, does not affect page layout ── */}
+// ── Dashboard page (protected) ─────────────────────────────────────────────
+function DashboardPage() {
+  return (
+    <ThemeProvider>
+      <AppShell active="overview">
+        <Dashboard />
+      </AppShell>
       <FraudChatPanel />
     </ThemeProvider>
   );
@@ -178,9 +112,33 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AppContent />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cases/:id"
+              element={
+                <ProtectedRoute>
+                  <ThemeProvider>
+                    <CaseDetail />
+                  </ThemeProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
       </AuthProvider>
-    <ReactQueryDevtools initialIsOpen={false} />
+      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 }

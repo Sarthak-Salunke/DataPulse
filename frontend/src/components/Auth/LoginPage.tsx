@@ -1,16 +1,19 @@
-// src/components/Auth/LoginPage.tsx
-// Login form — styled to match the existing dark dashboard theme.
-
+// ── LoginPage — Google OAuth + username/password fallback ───────────
 import { useState, type FormEvent } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: Location })?.from?.pathname ?? '/dashboard';
 
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError]       = useState<string | null>(null);
-  const [loading, setLoading]   = useState(false);
+  const [password, setPassword]   = useState('');
+  const [error, setError]         = useState<string | null>(null);
+  const [loading, setLoading]     = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -18,6 +21,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(username, password);
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -25,189 +29,165 @@ export default function LoginPage() {
     }
   }
 
-  return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--bg-void)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '380px',
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--r-xl)',
-          padding: '40px 36px',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Top accent line */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0, left: 0, right: 0,
-            height: '2px',
-            background: 'linear-gradient(90deg, var(--cyan), transparent)',
-          }}
-        />
+  async function handleGoogleSuccess(credential: string) {
+    setError(null);
+    setLoading(true);
+    try {
+      await googleLogin(credential);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google sign-in failed');
+    } finally {
+      setLoading(false);
+    }
+  }
 
-        {/* Header */}
-        <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-          <div
-            style={{
-              fontFamily: 'var(--font-label)',
-              fontSize: '10px',
-              letterSpacing: '0.2em',
-              color: 'var(--cyan)',
-              opacity: 0.7,
-              textTransform: 'uppercase',
-              marginBottom: '8px',
-            }}
-          >
-            Fraud Detection System
-          </div>
-          <div
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '22px',
-              fontWeight: 700,
-              color: 'var(--text-bright)',
-            }}
-          >
-            DataPulse
-          </div>
-          <div
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '12px',
-              color: 'var(--text-muted)',
-              marginTop: '6px',
-            }}
-          >
-            Sign in to access the dashboard
-          </div>
+  return (
+    <div style={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+      {/* Left: form */}
+      <div style={{ padding: '32px 48px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <a className="brand-row" href="/"><div className="brand-mark">D</div>DataPulse</a>
+          <span className="pill"><span className="live-dot"/>v1.4 · us-east-1</span>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Field label="Username">
-            <input
-              type="text"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              required
-              autoFocus
-              autoComplete="username"
-              placeholder="admin"
-              style={inputStyle}
-            />
-          </Field>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: 380 }}>
+            <div className="reveal" data-d="1" style={{
+              fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--brand)',
+              textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16,
+            }}>SIGN IN</div>
+            <h1 className="reveal" data-d="2" style={{
+              fontSize: 38, fontWeight: 500, letterSpacing: '-0.025em',
+              lineHeight: 1.05, margin: '0 0 12px',
+            }}>
+              Welcome back, <em className="italic-em" style={{
+                background: 'linear-gradient(120deg, var(--brand), var(--indigo))',
+                WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              }}>analyst.</em>
+            </h1>
+            <p className="reveal" data-d="3" style={{ color: 'var(--fg-2)', fontSize: 14, marginBottom: 32 }}>
+              Use your work account to access the live fraud dashboard.
+            </p>
 
-          <Field label="Password">
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-              style={inputStyle}
-            />
-          </Field>
-
-          {error && (
-            <div
-              style={{
-                background: 'var(--fraud-dim)',
-                border: '1px solid var(--fraud-border)',
-                borderRadius: 'var(--r-md)',
-                padding: '10px 14px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '12px',
-                color: 'var(--fraud)',
-              }}
-            >
-              {error}
+            {/* Google OAuth button */}
+            <div className="reveal" data-d="4" style={{ marginBottom: 24 }}>
+              <GoogleLogin
+                onSuccess={({ credential }) => credential && handleGoogleSuccess(credential)}
+                onError={() => setError('Google sign-in failed — try again')}
+                theme="filled_black"
+                shape="rectangular"
+                text="continue_with"
+                size="large"
+                width="380"
+              />
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              marginTop: '8px',
-              padding: '12px',
-              background: loading ? 'rgba(0,207,255,0.1)' : 'var(--cyan)',
-              color: loading ? 'var(--cyan)' : 'var(--bg-void)',
-              border: loading ? '1px solid var(--cyan)' : 'none',
-              borderRadius: 'var(--r-lg)',
-              fontFamily: 'var(--font-label)',
-              fontSize: '13px',
-              fontWeight: 700,
-              letterSpacing: '0.08em',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'opacity 0.15s',
-            }}
-          >
-            {loading ? 'Signing in…' : 'Sign In'}
-          </button>
-        </form>
+            <div className="reveal" data-d="5" style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              fontFamily: 'var(--mono)', fontSize: 10,
+              color: 'var(--fg-4)', textTransform: 'uppercase', letterSpacing: '0.1em',
+              margin: '24px 0',
+            }}>
+              <span style={{ flex: 1, height: 1, background: 'var(--rule)' }}/>
+              Or with username
+              <span style={{ flex: 1, height: 1, background: 'var(--rule)' }}/>
+            </div>
 
-        {/* Footer hint */}
-        <div
-          style={{
-            marginTop: '24px',
-            textAlign: 'center',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '11px',
-            color: 'var(--text-muted)',
-          }}
-        >
-          Default: <span style={{ color: 'var(--text-secondary)' }}>admin / datapulse2024</span>
+            <form onSubmit={handleSubmit} className="reveal" data-d="6">
+              <Field label="Username" id="username">
+                <input
+                  type="text"
+                  id="username"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  placeholder="admin"
+                  autoComplete="username"
+                />
+              </Field>
+              <Field label="Password" id="pw">
+                <input
+                  type="password"
+                  id="pw"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••••"
+                  autoComplete="current-password"
+                />
+              </Field>
+
+              {error && (
+                <div style={{
+                  padding: '8px 12px', borderRadius: 6, marginBottom: 12,
+                  background: 'var(--risk-soft)', color: 'var(--risk)',
+                  fontSize: 12, border: '1px solid var(--risk)',
+                }}>{error}</div>
+              )}
+
+              <button type="submit" disabled={loading} style={{
+                width: '100%', padding: 13,
+                background: 'linear-gradient(180deg, var(--brand-2), var(--brand))',
+                color: 'var(--ink-0)', border: '1px solid var(--brand)',
+                borderRadius: 10, fontSize: 14, fontWeight: 600,
+                fontFamily: 'var(--sans)', cursor: 'pointer',
+                opacity: loading ? 0.7 : 1,
+              }}>{loading ? 'Signing in…' : 'Sign in →'}</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {/* Right: testimonial */}
+      <div style={{
+        background: 'var(--ink-1)',
+        borderLeft: '1px solid var(--rule)',
+        padding: '32px 48px',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div className="reveal" data-d="3" style={{ maxWidth: 480, position: 'relative', zIndex: 1 }}>
+          <div style={{
+            fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-3)',
+            textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 24,
+          }}>FROM THE FIELD</div>
+          <blockquote style={{
+            margin: 0, fontFamily: 'var(--serif)', fontStyle: 'italic',
+            fontSize: 30, lineHeight: 1.3, letterSpacing: '-0.01em', fontWeight: 500,
+          }}>
+            <span style={{ color: 'var(--brand)', marginRight: 4 }}>"</span>
+            The verdicts arrive before the receipt prints. We stopped writing post-mortem reports — there's nothing to bury anymore.
+          </blockquote>
+          <div style={{ marginTop: 24, fontFamily: 'var(--mono)', fontSize: 12 }}>
+            H. Okafor<br/>
+            <span style={{ color: 'var(--fg-3)' }}>VP, Fraud Operations · Tier-1 issuer</span>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      <label
-        style={{
-          fontFamily: 'var(--font-label)',
-          fontSize: '11px',
-          fontWeight: 600,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          color: 'var(--text-secondary)',
-        }}
-      >
-        {label}
-      </label>
-      {children}
-    </div>
+    <>
+      <label htmlFor={id} style={{
+        display: 'block', fontFamily: 'var(--mono)', fontSize: 10,
+        color: 'var(--fg-3)', textTransform: 'uppercase', letterSpacing: '0.06em',
+        marginBottom: 6,
+      }}>{label}</label>
+      <div style={{ marginBottom: 14 }}>
+        {children && <style>{`
+          input[type="text"], input[type="password"] {
+            width: 100%; padding: 12px 14px;
+            background: var(--ink-1); border: 1px solid var(--rule-strong);
+            border-radius: 10px; color: var(--fg);
+            font-size: 14px; font-family: var(--sans);
+          }
+          input:focus { outline: none; border-color: var(--brand);
+            box-shadow: 0 0 0 3px var(--brand-soft); }
+        `}</style>}
+        {children}
+      </div>
+    </>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '10px 14px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border)',
-  borderRadius: 'var(--r-md)',
-  color: 'var(--text-primary)',
-  fontFamily: 'var(--font-mono)',
-  fontSize: '13px',
-  outline: 'none',
-  boxSizing: 'border-box',
-};

@@ -14,21 +14,6 @@ export interface Transaction {
   type?: string;
 }
 
-export interface KPI {
-  title: string;
-  value: string;
-  details: string;
-  change: string;
-  changeType: 'increase' | 'decrease';
-}
-
-export interface Toast {
-  id: number;
-  title: string;
-  message: string;
-  type: 'error' | 'success';
-}
-
 export interface DashboardMetrics {
   totalTransactions: number;
   fraudDetected: number;
