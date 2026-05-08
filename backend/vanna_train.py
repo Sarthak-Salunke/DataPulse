@@ -2,7 +2,7 @@
 One-time Vanna training script.
 
 Run ONCE before starting the FastAPI server, and re-run whenever the schema
-or business rules change. ChromaDB persists training data in ./chromadb/.
+or business rules change. Training data is stored in Postgres via pgvector.
 
 Usage (from the backend/ directory):
     python vanna_train.py
@@ -165,7 +165,7 @@ def main() -> None:
         """,
     )
 
-    print("Vanna training complete. ChromaDB data saved to ./chromadb/")
+    print("Vanna training complete. Training data stored in Postgres via pgvector.")
 
 
 if __name__ == "__main__":

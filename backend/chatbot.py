@@ -18,13 +18,25 @@ from fastapi import Cookie
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
-# Vanna imports are lazy (inside _get_vanna) so a missing optional dependency
-# only fails when the chatbot endpoint is called, not at server startup.
 try:
     import google.generativeai as genai
     _GENAI_AVAILABLE = True
 except ImportError:
     _GENAI_AVAILABLE = False
+
+# FraudVanna is defined at module level so vanna_train.py can import it directly.
+try:
+    from vanna.pgvector import PG_VectorStore
+    from vanna.google import GoogleGeminiChat
+
+    class FraudVanna(PG_VectorStore, GoogleGeminiChat):
+        def __init__(self, config=None):
+            PG_VectorStore.__init__(self, config=config)
+            GoogleGeminiChat.__init__(self, config=config)
+
+    _VANNA_AVAILABLE = True
+except ImportError:
+    _VANNA_AVAILABLE = False
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Auth — mirrors main_fastapi.py; reads the same env vars so tokens issued
@@ -83,31 +95,12 @@ def _get_vanna():
     if _vn is not None:
         return _vn
 
+    if not _VANNA_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Vanna with pgvector is not installed.")
+
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise HTTPException(status_code=503, detail="GEMINI_API_KEY is not configured.")
-
-    try:
-        from vanna.pgvector import PG_VectorStore
-        from vanna.google import GoogleGeminiChat
-
-        class FraudVanna(PG_VectorStore, GoogleGeminiChat):
-            def __init__(self, config=None):
-                PG_VectorStore.__init__(self, config=config)
-                GoogleGeminiChat.__init__(self, config=config)
-
-    except ImportError:
-        try:
-            from vanna.chromadb import ChromaDB_VectorStore
-            from vanna.google import GoogleGeminiChat
-
-            class FraudVanna(ChromaDB_VectorStore, GoogleGeminiChat):  # type: ignore
-                def __init__(self, config=None):
-                    ChromaDB_VectorStore.__init__(self, config=config)
-                    GoogleGeminiChat.__init__(self, config=config)
-
-        except ImportError:
-            raise HTTPException(status_code=503, detail="Vanna is not installed.")
 
     conn_str = _build_pg_connection_string()
     _vn = FraudVanna(config={
