@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import './ScrollReveal.css';
@@ -10,7 +10,7 @@ interface ScrollRevealProps {
   children:             React.ReactNode;
   scrollContainerRef?:  React.RefObject<HTMLElement>;
   /** HTML element to render as the outer wrapper (default: 'h2') */
-  as?:                  keyof JSX.IntrinsicElements;
+  as?:                  keyof React.JSX.IntrinsicElements;
   enableBlur?:          boolean;
   baseOpacity?:         number;
   baseRotation?:        number;
