@@ -13,13 +13,18 @@ import os
 from typing import Any, List, Optional
 
 import pandas as pd
-import google.generativeai as genai
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import Cookie
 from jose import JWTError, jwt
 from pydantic import BaseModel
-from vanna.pgvector import PG_VectorStore
-from vanna.google import GoogleGeminiChat
+
+# Vanna imports are lazy (inside _get_vanna) so a missing optional dependency
+# only fails when the chatbot endpoint is called, not at server startup.
+try:
+    import google.generativeai as genai
+    _GENAI_AVAILABLE = True
+except ImportError:
+    _GENAI_AVAILABLE = False
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Auth — mirrors main_fastapi.py; reads the same env vars so tokens issued
@@ -48,13 +53,7 @@ def get_current_user(access_token: Optional[str] = Cookie(default=None)) -> dict
 # chat request instead of crashing the entire server at import time.
 # ─────────────────────────────────────────────────────────────────────────────
 
-class FraudVanna(PG_VectorStore, GoogleGeminiChat):
-    def __init__(self, config=None):
-        PG_VectorStore.__init__(self, config=config)
-        GoogleGeminiChat.__init__(self, config=config)
-
-
-_vn: Optional[FraudVanna] = None
+_vn = None  # type: ignore
 
 
 def _build_pg_connection_string() -> str:
@@ -71,27 +70,49 @@ def _build_pg_connection_string() -> str:
     return f"postgresql://{user}:{pwd}@{host}:{port}/{name}"
 
 
-def _get_vanna() -> FraudVanna:
+def _get_vanna():
     global _vn
-    if _vn is None:
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise HTTPException(
-                status_code=503,
-                detail="GEMINI_API_KEY is not configured on the server.",
-            )
-        conn_str = _build_pg_connection_string()
-        _vn = FraudVanna(config={
-            "api_key":           api_key,
-            "model":             "gemini-1.5-flash",
-            "connection_string": conn_str,
-        })
-        _vn.connect_to_postgres(
-            host=os.getenv("DB_HOST", "localhost"),
-            dbname=os.getenv("DB_NAME", "fraud_detection"),
-            user=os.getenv("DB_READONLY_USER"),
-            password=os.getenv("DB_READONLY_PASSWORD"),
-        )
+    if _vn is not None:
+        return _vn
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="GEMINI_API_KEY is not configured.")
+
+    try:
+        from vanna.pgvector import PG_VectorStore
+        from vanna.google import GoogleGeminiChat
+
+        class FraudVanna(PG_VectorStore, GoogleGeminiChat):
+            def __init__(self, config=None):
+                PG_VectorStore.__init__(self, config=config)
+                GoogleGeminiChat.__init__(self, config=config)
+
+    except ImportError:
+        try:
+            from vanna.chromadb import ChromaDB_VectorStore
+            from vanna.google import GoogleGeminiChat
+
+            class FraudVanna(ChromaDB_VectorStore, GoogleGeminiChat):  # type: ignore
+                def __init__(self, config=None):
+                    ChromaDB_VectorStore.__init__(self, config=config)
+                    GoogleGeminiChat.__init__(self, config=config)
+
+        except ImportError:
+            raise HTTPException(status_code=503, detail="Vanna is not installed.")
+
+    conn_str = _build_pg_connection_string()
+    _vn = FraudVanna(config={
+        "api_key":           api_key,
+        "model":             "gemini-1.5-flash",
+        "connection_string": conn_str,
+    })
+    _vn.connect_to_postgres(
+        host=os.getenv("DB_HOST", "localhost"),
+        dbname=os.getenv("DB_NAME", "fraud_detection"),
+        user=os.getenv("DB_READONLY_USER"),
+        password=os.getenv("DB_READONLY_PASSWORD"),
+    )
     return _vn
 
 
@@ -99,10 +120,11 @@ def _get_vanna() -> FraudVanna:
 # Pass 2 — natural language summary of the query results
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _summary_model() -> Optional[genai.GenerativeModel]:
+def _summary_model():
     api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
+    if not api_key or not _GENAI_AVAILABLE:
         return None
+    import google.generativeai as genai
     genai.configure(api_key=api_key)
     return genai.GenerativeModel("gemini-1.5-flash")
 
