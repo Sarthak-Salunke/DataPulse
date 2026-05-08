@@ -1,0 +1,87 @@
+# Render deployment configuration for DataPulse
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Services:
+#   datapulse-api           — FastAPI REST + WebSocket backend  (free web service)
+#   datapulse-kafka-worker  — Python Kafka consumer + scorer    (free background worker)
+#
+# Before deploying:
+#   1. Create a Supabase project and run config/supabase_schema.sql
+#   2. Create a Redpanda Cloud Serverless cluster and topic
+#   3. Run: python pipeline/train_streaming_model.py   (commit ml/models/streaming/ to git)
+#   4. Set all sync: false  env vars below in the Render dashboard
+
+services:
+
+  # ── FastAPI backend ──────────────────────────────────────────────────────────
+  - type: web
+    name: datapulse-api
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash -c 'cd backend && uvicorn main_fastapi:app --host 0.0.0.0 --port $PORT'
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false         # paste from Supabase → Settings → Database → Connection string (URI)
+
+      - key: ALLOWED_ORIGINS
+        sync: false         # e.g. https://datapulse.vercel.app,http://localhost:5173
+
+      - key: JWT_SECRET_KEY
+        generateValue: true # Render auto-generates a secure random value
+
+      - key: JWT_ALGORITHM
+        value: HS256
+
+      - key: JWT_EXPIRE_MINUTES
+        value: "480"
+
+      - key: ADMIN_USERNAME
+        value: admin
+
+      - key: ADMIN_PASSWORD
+        sync: false         # set in Render dashboard
+
+      - key: GEMINI_API_KEY
+        sync: false         # optional: enables NLP chatbot
+
+      - key: DB_READONLY_USER
+        value: dp_readonly
+
+      - key: DB_READONLY_PASSWORD
+        sync: false         # optional: required for chatbot
+
+  # ── Kafka consumer worker ────────────────────────────────────────────────────
+  - type: worker
+    name: datapulse-kafka-worker
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python pipeline/kafka_consumer_worker.py
+    envVars:
+      - key: DATABASE_URL
+        sync: false         # same Supabase connection string as API
+
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        sync: false         # Redpanda Cloud bootstrap URL (seed-xxx.xxx.redpanda.com:9092)
+
+      - key: KAFKA_TOPIC
+        value: creditcardTransaction
+
+      - key: KAFKA_GROUP_ID
+        value: fraud-detection-worker
+
+      - key: REDPANDA_USERNAME
+        sync: false         # SASL username from Redpanda Cloud console
+
+      - key: REDPANDA_PASSWORD
+        sync: false         # SASL password from Redpanda Cloud console
+
+      - key: MODEL_PATH
+        value: ml/models/streaming/sklearn_rf.pkl
+
+      - key: ENCODERS_PATH
+        value: ml/models/streaming/label_encoders.pkl

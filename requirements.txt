@@ -1,0 +1,52 @@
+# DataPulse — Full Stack Requirements
+# Install: pip install -r requirements.txt
+
+# ── Database ──────────────────────────────────────────────────────────────────
+psycopg2-binary==2.9.9
+
+# ── Data Processing ───────────────────────────────────────────────────────────
+pandas==2.1.4
+numpy==1.26.2
+scipy>=1.10.0
+
+# ── Messaging ────────────────────────────────────────────────────────────────
+kafka-python==2.0.2
+confluent-kafka>=2.3.0
+
+# ── FastAPI ──────────────────────────────────────────────────────────────────
+fastapi
+uvicorn[standard]
+
+# ── Authentication ────────────────────────────────────────────────────────────
+# bcrypt must stay on 4.x — passlib 1.7.4 is incompatible with bcrypt 5.x
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+# ── Utilities ────────────────────────────────────────────────────────────────
+python-dotenv==1.0.0
+requests==2.31.0
+
+# ── CAPE: Core ML ────────────────────────────────────────────────────────────
+scikit-learn>=1.3.0
+lightgbm>=4.0.0
+
+# ── CAPE: Conformal Prediction ───────────────────────────────────────────────
+mapie>=0.8.0
+
+# ── CAPE: Explainability ─────────────────────────────────────────────────────
+shap>=0.43.0
+
+# ── CAPE: Drift Detection ────────────────────────────────────────────────────
+ruptures>=1.1.7
+
+# ── CAPE: Feature Store (optional Redis backend) ─────────────────────────────
+redis>=5.0.0
+
+# ── Streaming worker ─────────────────────────────────────────────────────────
+joblib>=1.3.0
+
+# ── NLP Chatbot (Vanna + Gemini + pgvector) ──────────────────────────────────
+vanna>=0.6.0
+pgvector>=0.2.0
+google-generativeai>=0.5.0

@@ -21,6 +21,9 @@ Changes from original:
 
   - Flask server (main.py / port 5050) is no longer needed and can be left
     stopped. All routes now live here on port 8000.
+
+  - query_execute.py has been removed (unused). DB queries are defined inline.
+    Install all dependencies from the root requirements.txt.
 """
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, Response, Cookie
@@ -29,16 +32,26 @@ from pydantic import BaseModel
 from typing import List, Optional
 from contextlib import contextmanager
 import asyncio
+import json
+import sys
+import os
 import psycopg2
 from psycopg2 import pool as pg_pool
 from psycopg2.extras import RealDictCursor
-import os
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 load_dotenv()
+
+# Allow importing cape/ from the project root when running from backend/
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
+from cape_router import router as cape_router, init_cape_pipeline
+from chatbot import router as chat_router
 
 # ============================================================================
 # Auth Configuration
@@ -209,13 +222,24 @@ class UserInfo(BaseModel):
 
 app = FastAPI(title="Fraud Detection API", version="2.0.0")
 
+_ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv(
+        "ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000"
+    ).split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(cape_router)
+app.include_router(chat_router)
 
 # ============================================================================
 # WebSocket Connection Manager
@@ -428,64 +452,54 @@ def _get_statement(cc_num: str, limit: int) -> dict:
 
 
 # ============================================================================
-# Background Task: Monitor for New Fraud Transactions
+# Background Task: Poll for New Fraud Transactions
+# Replaces pg_notify LISTEN/NOTIFY which is blocked by Supabase's connection
+# pooler (Supavisor). Compatible with direct Postgres and Supabase alike.
 # ============================================================================
 
-_last_check_time = datetime.now()
+_last_fraud_seen: datetime = datetime.utcnow()
 
 
-def _fetch_new_frauds(since: datetime):
-    """Sync helper called from the async monitor via run_in_executor."""
+def _fetch_new_fraud(since: datetime) -> list:
     with get_db() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
-                SELECT trans_time, trans_num, cc_num, amt, merchant,
+                SELECT cc_num, trans_num, trans_time, amt, merchant,
                        is_fraud, category, distance, created_at
                 FROM fraud_transaction
                 WHERE created_at > %s
-                ORDER BY created_at DESC
+                ORDER BY created_at ASC
+                LIMIT 50
             """, (since,))
-            rows = cur.fetchall()
-    return [dict(r) for r in rows]
+            return cur.fetchall() or []
 
 
-async def monitor_fraud_transactions():
-    """
-    Background task: poll the DB every 5 s and broadcast new fraud events.
-    The sync DB call is offloaded to a thread via run_in_executor so it
-    never blocks the event loop.
-    """
-    global _last_check_time
-    loop = asyncio.get_event_loop()
-
+async def poll_new_fraud_transactions():
+    """Poll fraud_transaction every 3 s and broadcast new rows to WebSocket clients."""
+    global _last_fraud_seen
     while True:
+        await asyncio.sleep(3)
         try:
-            await asyncio.sleep(5)
-            new_frauds = await loop.run_in_executor(
-                None, _fetch_new_frauds, _last_check_time
-            )
-
-            if new_frauds:
-                print(f"🚨 {len(new_frauds)} new fraud transaction(s) detected")
-                for f in new_frauds:
-                    await manager.broadcast({
-                        "type": "fraud_alert",
-                        "data": {
-                            "timestamp":  f['trans_time'].isoformat() if f['trans_time'] else datetime.now().isoformat(),
-                            "ccNum":      f"**** **** **** {str(f['cc_num'])[-4:]}",
-                            "amount":     float(f['amt']),
-                            "merchant":   f['merchant'],
-                            "confidence": float(f['is_fraud']) * 100,
-                            "transNum":   f['trans_num'],
-                            "category":   f['category'],
-                            "distance":   float(f['distance']) if f['distance'] else 0,
-                        }
-                    })
-                _last_check_time = max(f['created_at'] for f in new_frauds)
-
+            loop = asyncio.get_event_loop()
+            rows = await loop.run_in_executor(None, _fetch_new_fraud, _last_fraud_seen)
+            for row in rows:
+                if row["created_at"] > _last_fraud_seen:
+                    _last_fraud_seen = row["created_at"]
+                await manager.broadcast({
+                    "type": "fraud_alert",
+                    "data": {
+                        "timestamp":  row["trans_time"].isoformat() if row["trans_time"] else datetime.now().isoformat(),
+                        "ccNum":      f"**** **** **** {str(row['cc_num'])[-4:]}",
+                        "amount":     float(row["amt"]),
+                        "merchant":   row["merchant"],
+                        "confidence": float(row["is_fraud"]) * 100,
+                        "transNum":   row["trans_num"],
+                        "category":   row["category"],
+                        "distance":   float(row["distance"]) if row["distance"] else 0,
+                    },
+                })
         except Exception as e:
-            print(f"monitor_fraud_transactions error: {e}")
-            await asyncio.sleep(10)
+            print(f"poll_new_fraud_transactions error: {e}")
 
 
 # ============================================================================
@@ -656,6 +670,7 @@ async def startup_event():
     global _pool
     _pool = pg_pool.ThreadedConnectionPool(minconn=2, maxconn=10, **DB_CONFIG)
     _build_users()  # hash admin password from .env once at startup
+    init_cape_pipeline(deployment_day=0)
     print("\n" + "=" * 60)
     print("🚀  Fraud Detection API  v2.0.0")
     print("=" * 60)
@@ -663,8 +678,9 @@ async def startup_event():
     print(f"  WS   : ws://localhost:8000/ws")
     print(f"  Docs : http://localhost:8000/docs")
     print(f"  Pool : min=2  max=10  connections")
+    print(f"  CAPE : /api/cape/score  /api/cape/status")
     print("=" * 60 + "\n")
-    asyncio.create_task(monitor_fraud_transactions())
+    asyncio.create_task(poll_new_fraud_transactions())
 
 
 @app.on_event("shutdown")

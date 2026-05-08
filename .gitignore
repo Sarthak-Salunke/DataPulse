@@ -1,19 +1,43 @@
+# ── Large datasets (managed outside git) ─────────────────────────────────────
 ml/training/Neural Network/data/raw/dataset.csv
 
-# Build outputs
+# ── Build outputs ─────────────────────────────────────────────────────────────
 frontend/dist/
 pipeline/kafka-producer/target/
 
-# Python
-backend/venv/
+# ── Python ───────────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+dist/
+build/
 
-# Node
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+backend/venv/
+
+# ── TypeScript / Vite build artifacts ────────────────────────────────────────
+*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+
+# ── Node ──────────────────────────────────────────────────────────────────────
 node_modules/
 
-# Env
+# ── Environment secrets ───────────────────────────────────────────────────────
 .env
+.env.local
+.env.*.local
+docs/creds.md
 
+
+# ── IDE / tooling ─────────────────────────────────────────────────────────────
 .claude
+.idea/
+.vscode/
+*.suo
+*.user

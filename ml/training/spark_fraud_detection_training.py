@@ -12,8 +12,8 @@ This job:
 
 import sys
 import os
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, lit, when, isnan
+from pyspark.sql import SparkSession, Window
+from pyspark.sql.functions import col, lit, when, isnan, hour, dayofweek, count, sum as spark_sum
 from pyspark.sql.types import StringType
 from pyspark.ml import Pipeline, PipelineModel
 from pyspark.ml.feature import StringIndexer, OneHotEncoder, VectorAssembler
@@ -177,17 +177,30 @@ def train_random_forest_model(df, spark):
     print(f"[INFO] Training set size: {train_count}")
     print(f"[INFO] Test set size: {test_count}")
     
+    # Compute inverse-frequency class weights to penalise the majority class
+    total   = train_df.count()
+    fraud_n = train_df.filter(col("label") == 1.0).count()
+    legit_n = total - fraud_n
+    w_fraud = total / (2.0 * fraud_n) if fraud_n > 0 else 1.0
+    w_legit = total / (2.0 * legit_n) if legit_n > 0 else 1.0
+
+    train_df = train_df.withColumn(
+        "classWeight",
+        when(col("label") == 1.0, w_fraud).otherwise(w_legit)
+    )
+
     # Configure Random Forest
     print("[INFO] Configuring Random Forest classifier...")
     rf = RandomForestClassifier(
         labelCol="label",
         featuresCol="features",
+        weightCol="classWeight",
         numTrees=100,
         maxBins=700,
         maxDepth=10,
         seed=42
     )
-    
+
     # Train model
     print("[INFO] Training model (this may take a few minutes)...")
     model = rf.fit(train_df)
@@ -277,14 +290,17 @@ def main():
         # Step 1: Read data from PostgreSQL
         print_section("LOADING DATA FROM POSTGRESQL")
         
-        # Feature columns used for training
-        feature_cols = ["cc_num", "category", "merchant", "distance", "amt", "age"]
-        
+        # Base feature columns — temporal & velocity features added after enrichment
+        base_feature_cols = ["cc_num", "category", "merchant", "distance", "amt", "age"]
+        feature_cols = base_feature_cols + ["hour", "dayofweek", "is_weekend",
+                                             "tx_count_1h", "tx_amt_1h"]
+        read_cols = base_feature_cols + ["is_fraud", "trans_time", "trans_num"]
+
         print("[INFO] Reading fraud transactions...")
-        fraud_df = read_from_postgres(spark, 'fraud_transaction', feature_cols + ["is_fraud"])
-        
+        fraud_df = read_from_postgres(spark, 'fraud_transaction', read_cols)
+
         print("[INFO] Reading non-fraud transactions...")
-        non_fraud_df = read_from_postgres(spark, 'non_fraud_transaction', feature_cols + ["is_fraud"])
+        non_fraud_df = read_from_postgres(spark, 'non_fraud_transaction', read_cols)
         
         # Rename is_fraud to label
         fraud_df = fraud_df.withColumnRenamed("is_fraud", "label")
@@ -340,23 +356,45 @@ def main():
         
         # Step 3: Build feature pipeline
         print_section("FEATURE ENGINEERING")
-        
-        # Union both datasets to create pipeline
+
+        # Union both datasets for joint temporal & velocity enrichment
         all_data = non_fraud_df.union(fraud_df)
-        
+
+        # Temporal features from trans_time
+        all_data = all_data \
+            .withColumn("hour",       hour(col("trans_time"))) \
+            .withColumn("dayofweek",  dayofweek(col("trans_time"))) \
+            .withColumn("is_weekend", when(dayofweek(col("trans_time")).isin(1, 7), 1).otherwise(0))
+
+        # Velocity features: 1-hour rolling window per card
+        # Repartition by cc_num for efficient, OOM-safe window computation
+        all_data = all_data.repartition(col("cc_num"))
+        vel_window = (
+            Window.partitionBy("cc_num")
+                  .orderBy(col("trans_time").cast("long"))
+                  .rangeBetween(-3600, 0)
+        )
+        all_data = all_data \
+            .withColumn("tx_count_1h", count("trans_num").over(vel_window)) \
+            .withColumn("tx_amt_1h",   spark_sum("amt").over(vel_window))
+
+        # Split enriched data back to fraud / non-fraud
+        fraud_enriched_df     = all_data.filter(col("label") == 1.0)
+        non_fraud_enriched_df = all_data.filter(col("label") == 0.0)
+
         pipeline_stages = build_feature_pipeline(all_data, feature_cols)
-        
+
         # Create and fit preprocessing pipeline
         print("\n[INFO] Fitting preprocessing pipeline...")
         preprocessing_pipeline = Pipeline(stages=pipeline_stages)
         preprocessing_model = preprocessing_pipeline.fit(all_data)
-        
+
         # Transform data
         print("[INFO] Transforming fraud data...")
-        fraud_features_df = preprocessing_model.transform(fraud_df).select("features", "label")
-        
+        fraud_features_df = preprocessing_model.transform(fraud_enriched_df).select("features", "label")
+
         print("[INFO] Transforming non-fraud data...")
-        non_fraud_features_df = preprocessing_model.transform(non_fraud_df).select("features", "label")
+        non_fraud_features_df = preprocessing_model.transform(non_fraud_enriched_df).select("features", "label")
         
         # Simple validation: just check counts
         print("\n[INFO] Validating transformed data...")

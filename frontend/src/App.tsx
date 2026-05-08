@@ -11,6 +11,7 @@ import FeaturesGrid from './components/VerifiableComputeSection';
 import ArchitectureDiagram from './components/Pipeline/ArchitectureDiagram';
 import Header from './components/Common/Header';
 import Dashboard from './components/Dashboard/Dashboard';
+import FraudChatPanel from './components/Chat/FraudChatPanel';
 
 // ── Theme context ──────────────────────────────────────────────────────────
 type Theme = 'dark' | 'light';
@@ -165,6 +166,9 @@ function AppContent() {
         {/* ── Footer ── */}
         <Footer />
       </div>
+
+      {/* ── Fraud Analyst Chatbot — fixed overlay, does not affect page layout ── */}
+      <FraudChatPanel />
     </ThemeProvider>
   );
 }

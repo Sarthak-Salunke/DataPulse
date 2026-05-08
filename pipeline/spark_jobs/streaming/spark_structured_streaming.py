@@ -22,7 +22,9 @@ import os
 from pyspark.sql import SparkSession, Window
 from pyspark.sql.functions import (
     col, from_json, to_timestamp, concat_ws, current_timestamp,
-    year, month, lit, expr, broadcast, row_number, when
+    year, month, lit, expr, broadcast, row_number, when,
+    hour, dayofweek, count, sum as spark_sum,
+    create_map, coalesce, vector_to_array, concat
 )
 from pyspark.sql.types import (
     StructType, StructField, StringType, DoubleType, 
@@ -33,6 +35,7 @@ from pyspark.ml.classification import RandomForestClassificationModel
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import execute_values
+from concurrent.futures import ThreadPoolExecutor
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -42,6 +45,31 @@ from spark_jobs.utils import (
 )
 
 load_dotenv()
+
+# Per-category fraud probability thresholds (tuned from offline model analysis)
+CATEGORY_THRESHOLDS = {
+    "misc_net":         0.25,
+    "online_shopping":  0.25,
+    "online_gift_card": 0.20,
+    "travel":           0.30,
+    "grocery_pos":      0.45,
+    "gas_transport":    0.45,
+}
+DEFAULT_THRESHOLD = 0.40
+
+_threshold_map = create_map([
+    lit("misc_net"),         lit(0.25),
+    lit("online_shopping"),  lit(0.25),
+    lit("online_gift_card"), lit(0.20),
+    lit("travel"),           lit(0.30),
+    lit("grocery_pos"),      lit(0.45),
+    lit("gas_transport"),    lit(0.45),
+])
+
+HIGH_RISK_CATEGORIES = [
+    "misc_net", "online_shopping", "online_gift_card",
+    "shopping_net", "shopping_pos", "home",
+]
 
 
 def get_kafka_transaction_schema():
@@ -201,16 +229,19 @@ def write_to_postgres_upsert(df, table_name, batch_id):
                 float(row.distance),
                 int(row.age) if row.age is not None else None,
                 float(row.is_fraud),
+                getattr(row, 'rule_flags',    '[]'),
+                getattr(row, 'rule_severity', 'NONE'),
                 row.created_at
             )
             for row in rows
         ]
-        
+
         # SQL with ON CONFLICT DO NOTHING
         sql = f"""
-            INSERT INTO {table_name} 
-            (cc_num, trans_time, trans_num, category, merchant, amt, 
-             merch_lat, merch_long, distance, age, is_fraud, created_at)
+            INSERT INTO {table_name}
+            (cc_num, trans_time, trans_num, category, merchant, amt,
+             merch_lat, merch_long, distance, age, is_fraud,
+             rule_flags, rule_severity, created_at)
             VALUES %s
             ON CONFLICT (cc_num, trans_time) DO NOTHING
         """
@@ -254,47 +285,119 @@ def write_to_postgres_foreach_batch(batch_df, batch_id, preprocessing_model, rf_
     print(f"\n[BATCH {batch_id}] Processing {batch_count} transaction{'s' if batch_count > 1 else ''}...")
     
     try:
-        # Select feature columns
-        feature_cols = ["cc_num", "category", "merchant", "distance", "amt", "age"]
+        # Temporal features from transaction timestamp
+        batch_df = batch_df \
+            .withColumn("hour",       hour(col("trans_time"))) \
+            .withColumn("dayofweek",  dayofweek(col("trans_time"))) \
+            .withColumn("is_weekend", when(dayofweek(col("trans_time")).isin(1, 7), 1).otherwise(0))
+
+        # Velocity features: 1-hour rolling window per card
+        # Repartition by cc_num for efficient, OOM-safe window computation
+        batch_df = batch_df.repartition(col("cc_num"))
+        vel_window = (
+            Window.partitionBy("cc_num")
+                  .orderBy(col("trans_time").cast("long"))
+                  .rangeBetween(-3600, 0)
+        )
+        batch_df = batch_df \
+            .withColumn("tx_count_1h", count("trans_num").over(vel_window)) \
+            .withColumn("tx_amt_1h",   spark_sum("amt").over(vel_window))
+
+        # Rule engine: 10-minute window (rule use only — NOT in ML feature vector)
+        win_10min = (
+            Window.partitionBy("cc_num")
+                  .orderBy(col("trans_time").cast("long"))
+                  .rangeBetween(-600, 0)
+        )
+        batch_df = batch_df.withColumn("tx_count_10min", count("trans_num").over(win_10min))
+
+        # Select feature columns (extended with temporal & velocity)
+        feature_cols = ["cc_num", "category", "merchant", "distance", "amt", "age",
+                        "hour", "dayofweek", "is_weekend", "tx_count_1h", "tx_amt_1h"]
         feature_df = batch_df.select(
             *[col(c) for c in feature_cols],
             col("trans_num"),
             col("trans_time"),
             col("merch_lat"),
-            col("merch_long")
+            col("merch_long"),
+            col("tx_count_10min")     # carried for rule engine, excluded from ML features
         )
+
+        # Apply preprocessing pipeline; cache to avoid recomputing DAG per model
+        preprocessed_df = preprocessing_model.transform(feature_df).cache()
+
+        # Score models in parallel threads
+        with ThreadPoolExecutor() as ex:
+            rf_future = ex.submit(rf_model.transform, preprocessed_df)
+            predictions_df = rf_future.result()
+
+        preprocessed_df.unpersist()
         
-        # Apply preprocessing pipeline
-        preprocessed_df = preprocessing_model.transform(feature_df)
-        
-        # Make predictions
-        predictions_df = rf_model.transform(preprocessed_df)
-        
-        # Add is_fraud column based on prediction
-        predictions_df = predictions_df.withColumn(
-            "is_fraud",
-            col("prediction")
-        )
-        
+        # Adaptive threshold: evaluate probability[1] against per-category threshold
+        predictions_df = predictions_df \
+            .withColumn("fraud_score", vector_to_array(col("probability"))[1]) \
+            .withColumn("threshold",   coalesce(_threshold_map[col("category")], lit(DEFAULT_THRESHOLD))) \
+            .withColumn("is_fraud",    when(col("fraud_score") >= col("threshold"), 1.0).otherwise(0.0))
+
+        # ── Rule Engine ───────────────────────────────────────────────────────────
+        # Broadcast join avg_amt_30d from customer_stats (graceful on empty/missing table)
+        spark = batch_df.sparkSession
+        try:
+            props = get_postgres_properties()
+            stats_df = spark.read.jdbc(
+                url=props['url'],
+                table='customer_stats',
+                properties={'user': props['user'], 'password': props['password'], 'driver': props['driver']}
+            ).select("cc_num", "avg_amt_30d")
+            predictions_df = predictions_df.join(broadcast(stats_df), on="cc_num", how="left")
+        except Exception:
+            predictions_df = predictions_df.withColumn("avg_amt_30d", lit(None).cast("double"))
+
+        # Boolean rule conditions (native Spark — no UDFs, no row iteration)
+        r_travel   = (col("distance") > 500) & (col("tx_count_10min") > 1)
+        r_spike    = col("avg_amt_30d").isNotNull() & (col("amt") > col("avg_amt_30d") * 5)
+        r_highrisk = col("category").isin(HIGH_RISK_CATEGORIES) & (col("amt") > 1000)
+
+        predictions_df = predictions_df \
+            .withColumn("rule_severity",
+                        when(r_travel,    lit("CRITICAL"))
+                        .when(r_spike,    lit("HIGH"))
+                        .when(r_highrisk, lit("MEDIUM"))
+                        .otherwise(lit("NONE"))) \
+            .withColumn("rule_flags",
+                        concat(
+                            lit("["),
+                            concat_ws(",",
+                                when(r_travel,    lit('"IMPOSSIBLE_TRAVEL:CRITICAL"')),
+                                when(r_spike,     lit('"AMOUNT_SPIKE:HIGH"')),
+                                when(r_highrisk,  lit('"HIGH_RISK_MERCHANT:MEDIUM"'))
+                            ),
+                            lit("]")
+                        )) \
+            .withColumn("is_fraud",
+                        when((col("is_fraud") == 1.0) | (col("rule_severity") == "CRITICAL"), 1.0)
+                        .otherwise(0.0))
+        # ── End Rule Engine ───────────────────────────────────────────────────────
+
         # Add created_at timestamp
         predictions_df = predictions_df.withColumn("created_at", current_timestamp())
-        
+
         # Select columns for database
         final_df = predictions_df.select(
             "cc_num", "trans_time", "trans_num", "category", "merchant",
             "amt", "merch_lat", "merch_long", "distance", "age", "is_fraud",
-            "created_at"
+            "rule_flags", "rule_severity", "created_at"
         )
-        
+
         # Deduplicate within batch - keep the latest record per (cc_num, trans_time)
         window_spec = Window.partitionBy("cc_num", "trans_time").orderBy(col("created_at").desc())
         final_df = final_df.withColumn("row_num", row_number().over(window_spec)) \
                            .filter(col("row_num") == 1) \
                            .drop("row_num")
-        
+
         # Split into fraud and non-fraud
-        fraud_df = final_df.filter(col("is_fraud") > 0.5)
-        non_fraud_df = final_df.filter(col("is_fraud") <= 0.5)
+        fraud_df     = final_df.filter(col("is_fraud") == 1.0)
+        non_fraud_df = final_df.filter(col("is_fraud") == 0.0)
 
         fraud_count = fraud_df.count()
         non_fraud_count = non_fraud_df.count()
@@ -398,7 +501,7 @@ def main():
             .outputMode("update") \
             .option("checkpointLocation", 
                    os.path.join(os.path.expanduser("~"), "frauddetection", "checkpoints", "structured-streaming")) \
-            .trigger(processingTime='20 seconds') \
+            .trigger(processingTime='5 seconds') \
             .start()
         
         # Wait for termination

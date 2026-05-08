@@ -262,6 +262,40 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO postgres;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO postgres;
 
 -- ============================================
+-- Fraud LISTEN/NOTIFY Infrastructure
+-- ============================================
+
+CREATE OR REPLACE FUNCTION notify_fraud_insert()
+RETURNS trigger AS $$
+BEGIN
+    PERFORM pg_notify('fraud_channel', row_to_json(NEW)::text);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER fraud_notify_trigger
+    AFTER INSERT ON fraud_transaction
+    FOR EACH ROW EXECUTE FUNCTION notify_fraud_insert();
+
+-- ============================================
+-- Rule Engine Schema
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS customer_stats (
+    cc_num       VARCHAR(50) PRIMARY KEY,
+    avg_amt_30d  NUMERIC(10, 2),
+    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE fraud_transaction
+    ADD COLUMN IF NOT EXISTS rule_flags     TEXT        DEFAULT '[]',
+    ADD COLUMN IF NOT EXISTS rule_severity  VARCHAR(10) DEFAULT 'NONE';
+
+ALTER TABLE non_fraud_transaction
+    ADD COLUMN IF NOT EXISTS rule_flags     TEXT        DEFAULT '[]',
+    ADD COLUMN IF NOT EXISTS rule_severity  VARCHAR(10) DEFAULT 'NONE';
+
+-- ============================================
 -- Data Retention Policy (Optional)
 -- Uncomment to keep only last 90 days
 -- ============================================
