@@ -71,7 +71,6 @@ export const LandingHeader = () => {
         <div className="nav-links">
           <a href="#how" onClick={smoothScroll}>How it works</a>
           <a href="#features" onClick={smoothScroll}>Features</a>
-          <a href="#docs" onClick={smoothScroll}>Docs</a>
         </div>
         <div className="nav-actions">
           <Link to="/login"><button className="btn">Sign in</button></Link>

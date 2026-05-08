@@ -31,7 +31,7 @@ export default function Sidebar({ active = 'overview', user, onLogout }: Sidebar
   return (
     <aside className="side">
       <a className="brand-row" href="/">
-        <div className="brand-mark">D</div>DataPulse
+        DataPulse
       </a>
 
       <nav className="nav-group">

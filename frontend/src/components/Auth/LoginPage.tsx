@@ -47,7 +47,7 @@ export default function LoginPage() {
       {/* Left: form */}
       <div style={{ padding: '32px 48px', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <a className="brand-row" href="/"><div className="brand-mark">D</div>DataPulse</a>
+          <a className="brand-row" href="/">DataPulse</a>
           <span className="pill"><span className="live-dot"/>v1.4 · us-east-1</span>
         </div>
 
