@@ -99,7 +99,7 @@ function LandingPage() {
 function DashboardPage() {
   return (
     <ThemeProvider>
-      <AppShell active="overview">
+      <AppShell>
         <Dashboard />
       </AppShell>
       <FraudChatPanel />
