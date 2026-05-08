@@ -1,0 +1,458 @@
+/* ── Landing page — section-specific styles ────────────────────── */
+
+/* Nav — floating pill ──────────────────────────────────────────── */
+.nav-bar {
+  position: sticky; top: 0; z-index: 20;
+  /* transparent outer wrapper provides the gap around the pill */
+  padding: 12px 24px 0;
+  background: transparent;
+}
+
+.nav-inner {
+  max-width: 880px; margin: 0 auto;
+  padding: 10px 14px 10px 22px;
+  display: flex; align-items: center; gap: 28px;
+  /* pill shape */
+  background: rgba(11, 13, 18, 0.80);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--rule-strong);
+  border-radius: 100px;
+  transition: background var(--d-mid) var(--ease-out),
+              border-color var(--d-mid) var(--ease-out);
+}
+.nav-bar.scrolled .nav-inner {
+  background: rgba(11, 13, 18, 0.96);
+  border-color: var(--rule);
+}
+
+.nav-links { display: flex; gap: 22px; font-size: 13px; color: var(--fg-2); }
+.nav-links a { transition: color var(--d-fast) var(--ease-out); }
+.nav-links a:hover { color: var(--fg); }
+.nav-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+.lp-container { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+
+/* Hero */
+.hero-section {
+  padding: 52px 0 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Radar — bleeds off right edge; invisible to pointer events */
+.hero-radar-wrap {
+  position: absolute;
+  right: -100px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 540px;
+  height: 540px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.48;
+}
+
+@media (max-width: 900px) {
+  .hero-radar-wrap { display: none; }
+}
+.hero-section::before {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(900px 460px at 80% 25%, var(--brand-soft), transparent 55%),
+    radial-gradient(600px 380px at 8%  42%, var(--indigo-soft), transparent 55%);
+  pointer-events: none;
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  margin-bottom: 16px;
+  color: var(--brand);
+  font-family: var(--mono); font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.hero-eyebrow::before {
+  content: ""; width: 28px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--brand));
+}
+h1.hero-h {
+  font-size: clamp(40px, 5.2vw, 60px); font-weight: 500;
+  letter-spacing: -0.035em; line-height: 1.02;
+  margin: 0 0 18px; max-width: 820px;
+}
+h1.hero-h em {
+  font-family: var(--serif); font-style: italic; font-weight: 500;
+  background: linear-gradient(120deg, var(--brand), var(--indigo));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero-sub {
+  font-size: 16px; color: var(--fg-2); line-height: 1.55;
+  max-width: 600px; margin-bottom: 24px;
+}
+.hero-cta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.hero-meta {
+  margin-top: 24px;
+  display: flex; gap: 28px; flex-wrap: wrap;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--fg-3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.hero-meta b { color: var(--fg); font-weight: 500; }
+.hero-meta b.brand { color: var(--brand); }
+
+/* Stats grid */
+.lp-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  margin-top: 28px;
+  background: var(--ink-1);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+}
+.lp-stat {
+  padding: 20px 20px;
+  border-right: 1px solid var(--rule);
+  position: relative;
+}
+.lp-stat:last-child { border-right: none; }
+.lp-stat::before {
+  content: ""; position: absolute; left: 0; top: 0;
+  height: 2px; width: 28px;
+  background: var(--brand);
+}
+.lp-stat:nth-child(2)::before { background: var(--indigo); }
+.lp-stat:nth-child(3)::before { background: var(--amber); }
+.lp-stat:nth-child(4)::before { background: var(--magenta); }
+.lp-stat .sv {
+  font-size: 32px; font-weight: 500;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.lp-stat .sv small { font-size: 18px; color: var(--fg-3); font-weight: 400; margin-left: 2px; }
+.lp-stat .sl {
+  font-family: var(--mono); font-size: 11px; color: var(--fg-3);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-top: 8px;
+}
+
+/* Section */
+.lp-section {
+  padding: 100px 0;
+}
+.lp-s-title {
+  font-size: clamp(32px, 4vw, 42px); font-weight: 500;
+  letter-spacing: -0.025em; line-height: 1.1;
+  margin: 14px 0 18px; max-width: 760px;
+}
+.lp-s-title em {
+  font-family: var(--serif); font-style: italic;
+  color: var(--brand); font-weight: 500;
+}
+.lp-s-lede {
+  font-size: 16px; color: var(--fg-2); line-height: 1.6; max-width: 640px;
+}
+
+/* Pipeline */
+.lp-pipeline {
+  margin-top: 56px;
+  background: var(--ink-1);
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  padding: 36px;
+  position: relative;
+  overflow: hidden;
+}
+.lp-pipe-flow {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 0; position: relative;
+}
+.lp-pipe-flow::before {
+  content: "";
+  position: absolute;
+  top: 28px; left: 10%; right: 10%;
+  height: 2px;
+  background: var(--rule-strong);
+  z-index: 0;
+}
+.lp-pipe-flow::after {
+  content: "";
+  position: absolute;
+  top: 28px; left: 10%;
+  height: 2px; width: 80%;
+  background: linear-gradient(90deg, var(--brand), var(--indigo), var(--amber));
+  transform-origin: left;
+  animation: pipeFill 4.5s var(--ease-out) infinite;
+  z-index: 1;
+}
+@keyframes pipeFill {
+  0%   { transform: scaleX(0); opacity: 0.9; }
+  60%  { transform: scaleX(1); opacity: 0.9; }
+  80%  { opacity: 0; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+/* Node pulse — fires in the first 22% of the 3s period, then idles */
+@keyframes nodeScale {
+  0%   { transform: scale(1);    }
+  6%   { transform: scale(1.22); }
+  15%  { transform: scale(1.07); }
+  22%  { transform: scale(1);    }
+  100% { transform: scale(1);    }
+}
+/* Ripple ring expands and fades in sync with nodeScale */
+@keyframes nodeRipple {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  22%  { transform: scale(2.4); opacity: 0;    }
+  100% { transform: scale(2.4); opacity: 0;    }
+}
+/* Terminal log line slides up into view */
+@keyframes logLine {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+.lp-pipe-step {
+  text-align: center; padding: 0 12px;
+  position: relative; z-index: 2;
+}
+.lp-pipe-icon {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  background: var(--ink-2);
+  border: 1px solid var(--rule);
+  margin: 0 auto 14px;
+  display: grid; place-items: center;
+  font-family: var(--mono); font-size: 20px;
+  color: var(--fg-2);
+  position: relative;
+  overflow: visible;
+  /* isolate so z-index stacks above the connecting line */
+  isolation: isolate;
+  transition: border-color var(--d-mid) var(--ease-out),
+              background   var(--d-mid) var(--ease-out);
+}
+/* Ripple ring pseudo-element */
+.lp-pipe-icon::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1.5px solid currentColor;
+  opacity: 0;
+  pointer-events: none;
+}
+/* Per-step colours + node pulse.
+   Background: soft colour layered over solid --ink-2 so the line never bleeds through.
+   Delays synced to pipeFill line reaching each node (6s period, fill = 3.6s → 0.9s apart). */
+.lp-pipe-step:nth-child(1) .lp-pipe-icon {
+  color: var(--brand);
+  border-color: var(--brand);
+  background: linear-gradient(var(--brand-soft), var(--brand-soft)), var(--ink-2);
+  animation: nodeScale 4.5s var(--ease-out) 0s      both infinite;
+}
+.lp-pipe-step:nth-child(2) .lp-pipe-icon {
+  color: var(--indigo);
+  border-color: var(--indigo);
+  background: linear-gradient(var(--indigo-soft), var(--indigo-soft)), var(--ink-2);
+  animation: nodeScale 4.5s var(--ease-out) 0.675s both infinite;
+}
+.lp-pipe-step:nth-child(3) .lp-pipe-icon {
+  color: var(--magenta);
+  border-color: var(--magenta);
+  background: linear-gradient(var(--magenta-soft), var(--magenta-soft)), var(--ink-2);
+  animation: nodeScale 4.5s var(--ease-out) 1.35s  both infinite;
+}
+.lp-pipe-step:nth-child(4) .lp-pipe-icon {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: linear-gradient(var(--amber-soft), var(--amber-soft)), var(--ink-2);
+  animation: nodeScale 4.5s var(--ease-out) 2.025s both infinite;
+}
+.lp-pipe-step:nth-child(5) .lp-pipe-icon {
+  color: var(--safe);
+  border-color: var(--safe);
+  background: linear-gradient(var(--safe-soft), var(--safe-soft)), var(--ink-2);
+  animation: nodeScale 4.5s var(--ease-out) 2.7s   both infinite;
+}
+/* Ripple rings with same delays */
+.lp-pipe-step:nth-child(1) .lp-pipe-icon::after { animation: nodeRipple 4.5s var(--ease-out) 0s      both infinite; }
+.lp-pipe-step:nth-child(2) .lp-pipe-icon::after { animation: nodeRipple 4.5s var(--ease-out) 0.675s both infinite; }
+.lp-pipe-step:nth-child(3) .lp-pipe-icon::after { animation: nodeRipple 4.5s var(--ease-out) 1.35s  both infinite; }
+.lp-pipe-step:nth-child(4) .lp-pipe-icon::after { animation: nodeRipple 4.5s var(--ease-out) 2.025s both infinite; }
+.lp-pipe-step:nth-child(5) .lp-pipe-icon::after { animation: nodeRipple 4.5s var(--ease-out) 2.7s   both infinite; }
+.lp-pipe-name { font-size: 14px; font-weight: 600; }
+.lp-pipe-tech { font-family: var(--mono); font-size: 11px; color: var(--fg-3); margin-top: 4px; }
+.lp-pipe-stat {
+  margin-top: 10px;
+  font-family: var(--mono); font-size: 10px;
+  color: var(--fg-2);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.lp-pipe-stat b { color: var(--brand); font-weight: 600; }
+
+.lp-pipe-trace {
+  margin-top: 32px; padding-top: 24px;
+  border-top: 1px solid var(--rule);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+}
+.lp-trace-label {
+  font-family: var(--mono); font-size: 11px; color: var(--fg-3);
+  margin-bottom: 12px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  display: flex; align-items: center; gap: 8px;
+}
+.lp-trace-swatch { width: 8px; height: 8px; border-radius: 2px; background: var(--safe); }
+.lp-trace-swatch.fraud { background: var(--risk); }
+.lp-trace-row {
+  font-family: var(--mono); font-size: 12px;
+  line-height: 1.9; color: var(--fg-2);
+  opacity: 0;
+  transform: translateY(7px);
+}
+/* Trigger log-line entrance when pipeline scrolls into view */
+.lp-pipeline.visible .lp-trace-row {
+  animation: logLine 0.32s var(--ease-out) both;
+}
+.lp-trace-row .tt { color: var(--fg-4); margin-right: 10px; }
+.lp-trace-row.flag b { color: var(--risk); }
+.lp-trace-row.ok   b { color: var(--safe); }
+
+/* Features */
+.lp-features {
+  margin-top: 56px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+}
+.lp-feature {
+  background: var(--ink-1);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: 28px 26px;
+  transition: transform var(--d-mid) var(--ease-out),
+              border-color var(--d-mid) var(--ease-out);
+  position: relative; overflow: hidden;
+  cursor: default;
+}
+.lp-feature::before {
+  content: ""; position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: var(--brand);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform var(--d-mid) var(--ease-out);
+}
+.lp-feature:nth-child(2)::before { background: var(--amber); }
+.lp-feature:nth-child(3)::before { background: var(--magenta); }
+.lp-feature:hover { transform: translateY(-4px); border-color: var(--rule-strong); }
+.lp-feature:hover::before { transform: scaleX(1); }
+.lp-feature .fn {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--brand); margin-bottom: 18px;
+}
+.lp-feature:nth-child(2) .fn { color: var(--amber); }
+.lp-feature:nth-child(3) .fn { color: var(--magenta); }
+.lp-feature h3 {
+  font-size: 18px; font-weight: 600; letter-spacing: -0.01em;
+  margin: 0 0 8px;
+}
+.lp-feature p { font-size: 13px; color: var(--fg-2); line-height: 1.6; margin: 0; }
+
+/* CTA */
+.lp-cta {
+  padding: 96px 0; text-align: center;
+  position: relative; overflow: hidden;
+}
+.lp-cta::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(700px 350px at 50% 40%, var(--brand-soft), transparent 65%);
+  pointer-events: none;
+}
+.lp-cta h2 {
+  font-size: clamp(32px, 4vw, 52px); font-weight: 500; letter-spacing: -0.03em;
+  line-height: 1.05; margin: 0 0 16px; position: relative;
+}
+.lp-cta h2 em {
+  font-family: var(--serif); font-style: italic;
+  background: linear-gradient(120deg, var(--brand), var(--magenta));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 500;
+}
+.lp-cta p { color: var(--fg-2); font-size: 16px; max-width: 540px; margin: 0 auto 28px; position: relative; }
+.lp-cta-actions { display: flex; gap: 10px; justify-content: center; position: relative; flex-wrap: wrap; }
+
+/* Footer */
+.lp-footer { padding: 48px 0 36px; color: var(--fg-3); font-size: 12px; }
+.lp-foot-grid {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 32px; margin-bottom: 36px;
+}
+.lp-foot-grid h4 {
+  font-family: var(--mono); font-size: 10px; color: var(--fg-4);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin: 0 0 12px; font-weight: 500;
+}
+.lp-foot-grid a {
+  display: block; color: var(--fg-2); margin-bottom: 6px; font-size: 13px;
+  transition: color var(--d-fast);
+}
+.lp-foot-grid a:hover { color: var(--brand); }
+.lp-foot-bottom {
+  border-top: 1px solid var(--rule); padding-top: 18px;
+  display: flex; justify-content: space-between;
+  font-family: var(--mono); font-size: 11px;
+}
+
+/* Page-wide bottom fade — one overlay for the entire landing page */
+.lp-page-fade {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 160px;
+  background: linear-gradient(to bottom, transparent, var(--ink-0));
+  pointer-events: none;
+  z-index: 9;
+}
+
+/* Scroll-reveal wrapper */
+.sr { opacity: 0; transform: translateY(16px); transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out); }
+.sr.visible { opacity: 1; transform: translateY(0); }
+.sr[data-d="1"] { transition-delay: 80ms; }
+.sr[data-d="2"] { transition-delay: 160ms; }
+.sr[data-d="3"] { transition-delay: 240ms; }
+.sr[data-d="4"] { transition-delay: 320ms; }
+.sr[data-d="5"] { transition-delay: 400ms; }
+.sr[data-d="6"] { transition-delay: 480ms; }
+
+@media (max-width: 768px) {
+  /* Pill nav collapses — hide links, keep logo + primary CTA */
+  .nav-bar { padding: 10px 16px 0; }
+  .nav-inner { border-radius: 16px; padding: 10px 12px 10px 16px; }
+  .nav-links { display: none; }
+
+  .lp-pipe-flow { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .lp-pipe-flow::before, .lp-pipe-flow::after { display: none; }
+  .lp-features { grid-template-columns: 1fr; }
+  .lp-stats { grid-template-columns: 1fr 1fr; }
+  .lp-foot-grid { grid-template-columns: 1fr 1fr; }
+  .lp-pipe-trace { grid-template-columns: 1fr; }
+  h1.hero-h { font-size: 40px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-pipe-flow::after,
+  .lp-pipe-icon,
+  .lp-pipe-icon::after { animation: none !important; }
+
+  .lp-trace-row {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .lp-pipeline.visible .lp-trace-row { animation: none !important; }
+
+  .sr, .sr.visible {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .reveal, .reveal.visible {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

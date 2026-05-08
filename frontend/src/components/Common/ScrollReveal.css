@@ -1,0 +1,13 @@
+/* ScrollReveal — minimal base; consuming code controls typography */
+.scroll-reveal {
+  margin: 0;
+}
+
+/* The inner span inherits all font styles from the outer element */
+.scroll-reveal-text {
+  display: block;
+}
+
+.word {
+  display: inline-block;
+}
