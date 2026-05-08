@@ -23,6 +23,9 @@ services:
     startCommand: bash -c 'cd backend && uvicorn main_fastapi:app --host 0.0.0.0 --port $PORT'
     healthCheckPath: /api/health
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
       - key: DATABASE_URL
         sync: false         # paste from Supabase → Settings → Database → Connection string (URI)
 
@@ -62,6 +65,9 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python pipeline/kafka_consumer_worker.py
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
       - key: DATABASE_URL
         sync: false         # same Supabase connection string as API
 
@@ -69,7 +75,7 @@ services:
         sync: false         # Redpanda Cloud bootstrap URL (seed-xxx.xxx.redpanda.com:9092)
 
       - key: KAFKA_TOPIC
-        value: creditcardTransaction
+        value: creditcardtransaction
 
       - key: KAFKA_GROUP_ID
         value: fraud-detection-worker
