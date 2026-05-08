@@ -731,10 +731,10 @@ def login(body: LoginRequest, response: Response):
     response.set_cookie(
         key="access_token",
         value=token,
-        httponly=True,          # JS cannot access this cookie
-        samesite="lax",         # sent on same-site navigations, not cross-site POSTs
+        httponly=True,
+        samesite="none",        # required for cross-origin (Vercel → Render)
         max_age=JWT_EXPIRE_MIN * 60,
-        secure=False,           # set to True when serving over HTTPS in production
+        secure=True,            # required when samesite="none"
     )
     return {"username": user["username"], "role": user["role"]}
 
@@ -768,9 +768,9 @@ def google_auth(body: GoogleLoginRequest, response: Response):
         key="access_token",
         value=token,
         httponly=True,
-        samesite="lax",
+        samesite="none",        # required for cross-origin (Vercel → Render)
         max_age=JWT_EXPIRE_MIN * 60,
-        secure=False,
+        secure=True,            # required when samesite="none"
     )
     return UserInfo(username=name, role="analyst")
 
@@ -778,7 +778,7 @@ def google_auth(body: GoogleLoginRequest, response: Response):
 @app.post("/auth/logout")
 def logout(response: Response):
     """Clear the auth cookie."""
-    response.delete_cookie(key="access_token", samesite="lax")
+    response.delete_cookie(key="access_token", samesite="none", secure=True)
     return {"message": "Logged out"}
 
 
