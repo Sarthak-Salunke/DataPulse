@@ -23,7 +23,7 @@ export default function LoginPage() {
       await login(username, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : 'Authentication failed. Verify your credentials and retry.');
     } finally {
       setLoading(false);
     }
@@ -36,7 +36,7 @@ export default function LoginPage() {
       await googleLogin(credential);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Google sign-in failed');
+      setError(err instanceof Error ? err.message : 'Google authentication failed. Retry or sign in with credentials.');
     } finally {
       setLoading(false);
     }
@@ -74,7 +74,7 @@ export default function LoginPage() {
             <div className="reveal" data-d="4" style={{ marginBottom: 24 }}>
               <GoogleLogin
                 onSuccess={({ credential }) => credential && handleGoogleSuccess(credential)}
-                onError={() => setError('Google sign-in failed — try again')}
+                onError={() => setError('Google authentication failed. Retry or sign in with credentials.')}
                 theme="filled_black"
                 shape="rectangular"
                 text="continue_with"

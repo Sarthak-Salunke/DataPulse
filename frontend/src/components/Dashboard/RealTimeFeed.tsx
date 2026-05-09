@@ -18,8 +18,8 @@ export default function RealTimeFeed({ transactions }: Props) {
     <div className="panel">
       <div className="panel-head">
         <div>
-          <div className="panel-title">Real-time feed <em>· last 50 events</em></div>
-          <div className="panel-sub">streaming from kafka topic <code>tx.in</code></div>
+          <div className="panel-title">Live transaction feed <em>· 50 most recent</em></div>
+          <div className="panel-sub">Live stream · authorized transaction channel</div>
         </div>
         <span className="pill"><span className="live-dot"/>LIVE</span>
       </div>
@@ -39,6 +39,13 @@ export default function RealTimeFeed({ transactions }: Props) {
             </tr>
           </thead>
           <tbody>
+            {transactions.length === 0 && (
+              <tr>
+                <td colSpan={6} style={{ ...td(), textAlign: 'center', color: 'var(--fg-3)', fontFamily: 'var(--mono)', fontSize: 11, padding: '16px 8px' }}>
+                  Awaiting transaction stream — connected to live channel.
+                </td>
+              </tr>
+            )}
             {transactions.slice(0, 12).map((t, i) => {
               const isNew = !seen.has(t.id) && i === 0;
               const isFraud = t.status === 'Fraud';

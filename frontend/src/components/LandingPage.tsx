@@ -5,6 +5,7 @@ import { useCountUp } from '../hooks/useCountUp';
 import Radar from './Common/Radar';
 import ShinyText from './Common/ShinyText';
 import ScrollReveal from './Common/ScrollReveal';
+import { APP_METRICS } from '../config/content';
 
 // ── Scroll-reveal hook ─────────────────────────────────────────────
 function useScrollReveal() {
@@ -74,7 +75,7 @@ export const LandingHeader = () => {
         </div>
         <div className="nav-actions">
           <Link to="/login"><button className="btn">Sign in</button></Link>
-          <Link to="/dashboard"><button className="btn primary">View dashboard →</button></Link>
+          <Link to="/dashboard"><button className="btn primary">Open Dashboard →</button></Link>
         </div>
       </div>
     </nav>
@@ -106,10 +107,10 @@ export const Hero = () => (
     </div>
     {/* Text content sits above the radar via z-index */}
     <div className="lp-container" style={{ position: 'relative', zIndex: 1 }}>
-      <div className="hero-eyebrow reveal" data-d="1">REAL-TIME FRAUD DETECTION · v1.4</div>
+      <div className="hero-eyebrow reveal" data-d="1">ENTERPRISE FRAUD INTELLIGENCE · v1.4</div>
       <h1 className="hero-h reveal" data-d="2">
         <ShinyText
-          text="Catch fraud in 38 ms,"
+          text="Block fraud at decision time —"
           color="#c2c8d6"
           shineColor="#ffffff"
           speed={3}
@@ -118,26 +119,26 @@ export const Hero = () => (
           direction="left"
           pauseOnHover
         />
-        {' '}<em>before settlement.</em>
+        {' '}<em>not after the chargeback.</em>
       </h1>
       <p className="hero-sub reveal" data-d="3">
-        DataPulse scores every card swipe through Kafka and a continuously-trained ML model — flagging anomalies in the time it takes a terminal to print a receipt.
+        DataPulse scores every transaction against a live ML model and flags anomalies before authorization completes — eliminating the refund loop entirely.
       </p>
       <div className="hero-cta reveal" data-d="4">
-        <Link to="/dashboard"><button className="btn primary">View live dashboard →</button></Link>
-        <button className="btn">Read the methodology</button>
+        <Link to="/dashboard"><button className="btn primary">Launch Dashboard →</button></Link>
+        <button className="btn">Explore the architecture</button>
       </div>
       <div className="hero-meta reveal" data-d="5">
-        <span><b className="brand">23.4K</b>&nbsp; tx/s sustained</span>
-        <span><b>94.3%</b>&nbsp; precision</span>
-        <span><b>92.0%</b>&nbsp; recall</span>
-        <span><b className="brand">38 ms</b>&nbsp; median latency</span>
+        <span><b className="brand">{APP_METRICS.hero.throughputDisplay}</b>&nbsp; tx / sec · sustained throughput</span>
+        <span><b>{APP_METRICS.hero.precisionPct}%</b>&nbsp; Detection precision</span>
+        <span><b>{APP_METRICS.hero.recallPct}%</b>&nbsp; Fraud recall</span>
+        <span><b className="brand">{APP_METRICS.hero.medianLatencyMs} ms</b>&nbsp; P50 verdict latency</span>
       </div>
       <div className="lp-stats reveal" data-d="6">
-        <StatCard target={184}  suffix="K" prefix="$" label="Capital protected · today" />
-        <StatCard target={2.4}  suffix="M"             label="Transactions / day" />
-        <StatCard target={0.42} suffix="%"             label="Fraud incidence rate" />
-        <StatCard target={4.2}  suffix="s"             label="End-to-end stream lag" />
+        <StatCard target={APP_METRICS.statCards.capitalProtectedK}     suffix="K" prefix="$" label="Capital protected · today" />
+        <StatCard target={APP_METRICS.statCards.transactionsPerDayM}   suffix="M"             label="Transactions / day" />
+        <StatCard target={APP_METRICS.statCards.fraudIncidenceRatePct} suffix="%"             label="Fraud incidence rate" />
+        <StatCard target={APP_METRICS.statCards.streamLagSeconds}      suffix="s"             label="End-to-end stream lag" />
       </div>
     </div>
   </section>
@@ -153,7 +154,7 @@ export const HowItWorksSection = () => {
     <section className="lp-section" id="how">
       <div className="lp-container">
         <div className="eyebrow sr visible">HOW IT WORKS</div>
-        <h2 className="lp-s-title">A transaction's path, <em>from swipe to decision.</em></h2>
+        <h2 className="lp-s-title">From card swipe to verdict — <em>traced in real time.</em></h2>
         <ScrollReveal
           as="p"
           containerClassName="lp-s-lede"
@@ -163,17 +164,11 @@ export const HowItWorksSection = () => {
           blurStrength={6}
           wordAnimationEnd="bottom 80%"
         >
-          Every card event flows through a five-stage pipeline. The model returns a verdict before the terminal completes its handshake — fraud is blocked, not refunded.
+          Every transaction flows through a five-stage pipeline. A scoring verdict is returned before authorization clears — fraud is intercepted at the source, not recovered after the fact.
         </ScrollReveal>
         <div className="lp-pipeline sr" ref={ref}>
           <div className="lp-pipe-flow">
-            {[
-              { ic: '↘', name: 'Ingest',     tech: 'Kafka',            stat: '23.4K msg/s' },
-              { ic: '∿', name: 'Stream',     tech: 'Redpanda Cloud',   stat: '2.0s batch' },
-              { ic: '▦', name: 'Featurise',  tech: 'Feature store',    stat: '8 ms lookup' },
-              { ic: '◈', name: 'Score',      tech: 'RF v1.2 · CAPE',  stat: '38 ms verdict' },
-              { ic: '→', name: 'Decide',     tech: 'Decision API',     stat: '<100ms total' },
-            ].map(s => (
+            {APP_METRICS.pipeline.stages.map(s => (
               <div key={s.name} className="lp-pipe-step">
                 <div className="lp-pipe-icon">{s.ic}</div>
                 <div className="lp-pipe-name">{s.name}</div>
@@ -185,19 +180,19 @@ export const HowItWorksSection = () => {
           <div className="lp-pipe-trace">
             <div>
               <div className="lp-trace-label"><span className="lp-trace-swatch" />TRACE · NORMAL TRANSACTION</div>
-              <div className="lp-trace-row" style={{ animationDelay: '80ms'  }}><span className="tt">+0 ms</span>card swipe at terminal · $42.18</div>
-              <div className="lp-trace-row" style={{ animationDelay: '200ms' }}><span className="tt">+12 ms</span>kafka topic <code>tx.in</code> received</div>
-              <div className="lp-trace-row" style={{ animationDelay: '320ms' }}><span className="tt">+22 ms</span>features hydrated · 38 dims</div>
-              <div className="lp-trace-row ok" style={{ animationDelay: '440ms' }}><span className="tt">+38 ms</span>model verdict · <b>approved</b> (p=0.02)</div>
-              <div className="lp-trace-row" style={{ animationDelay: '560ms' }}><span className="tt">+44 ms</span>response sent · receipt prints</div>
+              <div className="lp-trace-row" style={{ animationDelay: '80ms'  }}><span className="tt">+0 ms</span>card swipe at terminal · {APP_METRICS.trace.normalAmountUsd}</div>
+              <div className="lp-trace-row" style={{ animationDelay: '200ms' }}><span className="tt">+{APP_METRICS.trace.kafkaTimingMs} ms</span>kafka topic <code>tx.in</code> received</div>
+              <div className="lp-trace-row" style={{ animationDelay: '320ms' }}><span className="tt">+{APP_METRICS.trace.featureTimingMs} ms</span>features hydrated · {APP_METRICS.trace.featureDimensions} dims</div>
+              <div className="lp-trace-row ok" style={{ animationDelay: '440ms' }}><span className="tt">+{APP_METRICS.trace.verdictTimingMs} ms</span>model verdict · <b>approved</b> ({APP_METRICS.trace.normalFraudProb})</div>
+              <div className="lp-trace-row" style={{ animationDelay: '560ms' }}><span className="tt">+{APP_METRICS.trace.responseTimingMs} ms</span>response sent · receipt prints</div>
             </div>
             <div>
               <div className="lp-trace-label fraud"><span className="lp-trace-swatch fraud" />TRACE · FRAUDULENT TRANSACTION</div>
-              <div className="lp-trace-row" style={{ animationDelay: '140ms' }}><span className="tt">+0 ms</span>card swipe · $487 · 1,847 km from home</div>
-              <div className="lp-trace-row" style={{ animationDelay: '260ms' }}><span className="tt">+12 ms</span>kafka received · velocity check</div>
-              <div className="lp-trace-row" style={{ animationDelay: '380ms' }}><span className="tt">+22 ms</span>geo + behaviour features · 4 outliers</div>
-              <div className="lp-trace-row flag" style={{ animationDelay: '500ms' }}><span className="tt">+38 ms</span>model verdict · <b>FRAUD</b> (p=0.98)</div>
-              <div className="lp-trace-row" style={{ animationDelay: '620ms' }}><span className="tt">+44 ms</span>decline returned · case opened · analyst pinged</div>
+              <div className="lp-trace-row" style={{ animationDelay: '140ms' }}><span className="tt">+0 ms</span>card swipe · {APP_METRICS.trace.fraudAmountUsd} · {APP_METRICS.trace.fraudDistanceKm} from home</div>
+              <div className="lp-trace-row" style={{ animationDelay: '260ms' }}><span className="tt">+{APP_METRICS.trace.kafkaTimingMs} ms</span>kafka received · velocity check</div>
+              <div className="lp-trace-row" style={{ animationDelay: '380ms' }}><span className="tt">+{APP_METRICS.trace.featureTimingMs} ms</span>geo + behaviour features · {APP_METRICS.trace.geoOutlierCount} outliers</div>
+              <div className="lp-trace-row flag" style={{ animationDelay: '500ms' }}><span className="tt">+{APP_METRICS.trace.verdictTimingMs} ms</span>model verdict · <b>FRAUD</b> ({APP_METRICS.trace.fraudProbability})</div>
+              <div className="lp-trace-row" style={{ animationDelay: '620ms' }}><span className="tt">+{APP_METRICS.trace.responseTimingMs} ms</span>decline returned · case opened · analyst pinged</div>
             </div>
           </div>
         </div>
@@ -211,7 +206,7 @@ export const FeaturesSection = () => (
   <section className="lp-section" id="features">
     <div className="lp-container">
       <div className="eyebrow">CAPABILITIES</div>
-      <h2 className="lp-s-title">Three things <em>that actually move the rate.</em></h2>
+      <h2 className="lp-s-title">Three capabilities <em>that reduce fraud losses.</em></h2>
       <ScrollReveal
         as="p"
         containerClassName="lp-s-lede"
@@ -248,7 +243,7 @@ export const FeaturesSection = () => (
 export const CtaSection = () => (
   <section className="lp-cta" id="docs">
     <div className="lp-container">
-      <h2>See it run on <em>your transaction stream.</em></h2>
+      <h2>Connect to <em>your transaction stream</em> in minutes.</h2>
       <ScrollReveal
         as="p"
         baseOpacity={0.08}
@@ -257,7 +252,7 @@ export const CtaSection = () => (
         blurStrength={5}
         wordAnimationEnd="bottom 75%"
       >
-        Drop a sample CSV in or point us at your Kafka topic — we'll have a live dashboard in 20 minutes.
+        {`Ingest a sample dataset or connect a live Kafka topic. A fully instrumented dashboard is operational in under ${APP_METRICS.cta.setupMinutes} minutes.`}
       </ScrollReveal>
       <div className="lp-cta-actions">
         <Link to="/dashboard"><button className="btn primary">Request a demo →</button></Link>

@@ -1,15 +1,18 @@
 // ── CaseDetail — fraud case review page ────────────────────────────
 import AppShell from '../Common/AppShell';
 import Topbar from '../Common/Topbar';
+import { APP_METRICS } from '../../config/content';
+
+const cd = APP_METRICS.caseDetail;
 
 interface Feature { name: string; value: string; weight: number; positive?: boolean; }
 const FEATURES: Feature[] = [
-  { name: 'Distance from home', value: '1,847 km',          weight: 0.31 },
-  { name: 'Velocity (1h)',      value: '5 swipes / 23 min', weight: 0.24 },
-  { name: 'Amount vs. card avg',value: '$487 vs. $42 · 11.6×', weight: 0.18 },
-  { name: 'Merchant risk',      value: 'Electronics · CNP · 0.73', weight: 0.12 },
-  { name: 'Card age',           value: '4.2y · low risk',   weight: 0.04, positive: true },
-  { name: 'Cardholder tenure',  value: '7y · 3,420 swipes', weight: 0.03, positive: true },
+  { name: 'Distance from home', value: cd.distanceFromHomeKm,                                                                    weight: 0.31 },
+  { name: 'Velocity (1h)',      value: cd.velocityDescription,                                                                   weight: 0.24 },
+  { name: 'Amount vs. card avg',value: `${cd.fraudAmountDisplay} vs. ${cd.cardholderAvgTicketShort} · ${cd.amountVsAvgMultiplier}`, weight: 0.18 },
+  { name: 'Merchant risk',      value: `Electronics · CNP · ${cd.merchantRiskScore}`,                                           weight: 0.12 },
+  { name: 'Card age',           value: `${cd.cardAgeYears}y · low risk`,                                                        weight: 0.04, positive: true },
+  { name: 'Cardholder tenure',  value: `${cd.cardholderTenureYears}y · ${cd.cardholderTotalSwipes.toLocaleString()} swipes`,   weight: 0.03, positive: true },
 ];
 
 export default function CaseDetail() {
@@ -20,9 +23,9 @@ export default function CaseDetail() {
         crumbs={[
           { label: 'Risk operations', href: '/dashboard' },
           { label: 'Fraud alerts', href: '/alerts' },
-          { label: 'TX-49281' },
+          { label: cd.transactionId },
         ]}
-        title={<>Suspected card-not-present fraud <span style={{ fontFamily: 'var(--mono)', color: 'var(--fg-3)', fontSize: 14, fontWeight: 400 }}>· TX-49281</span></>}
+        title={<>Suspected card-not-present fraud <span style={{ fontFamily: 'var(--mono)', color: 'var(--fg-3)', fontSize: 14, fontWeight: 400 }}>· {cd.transactionId}</span></>}
         actions={
           <>
             <button className="btn">Previous case</button>
@@ -51,16 +54,16 @@ export default function CaseDetail() {
         }}>!</div>
         <div>
           <h2 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 600, color: 'var(--risk)', letterSpacing: '-0.01em' }}>
-            Flagged · 98.2% confidence
+            Flagged · {cd.fraudConfidencePct}% confidence
           </h2>
           <div style={{ fontSize: 13, color: 'var(--fg-2)' }}>
             Velocity, geography, and merchant risk all out-of-distribution. Decline issued at +44 ms; analyst review pending.
           </div>
         </div>
         <div style={{ display: 'flex', gap: 28 }}>
-          <Stat v="$487.20"  l="Amount" />
-          <Stat v="98.2%"    l="P(fraud)" color="var(--risk)" />
-          <Stat v={<>38<span style={{ fontSize: 14, color: 'var(--fg-3)' }}> ms</span></>} l="Verdict latency" />
+          <Stat v={cd.fraudAmountFull}                                                                                    l="Amount" />
+          <Stat v={`${cd.fraudConfidencePct}%`}                                                                           l="P(fraud)" color="var(--risk)" />
+          <Stat v={<>{cd.verdictLatencyMs}<span style={{ fontSize: 14, color: 'var(--fg-3)' }}> ms</span></>}            l="Verdict latency" />
         </div>
       </div>
 
@@ -70,7 +73,7 @@ export default function CaseDetail() {
           <div className="panel-head">
             <div>
               <div className="panel-title">Why the model flagged this <em>· feature contributions</em></div>
-              <div className="panel-sub">SHAP values · top 6 of 38 features</div>
+              <div className="panel-sub">SHAP values · top 6 of {cd.totalFeatures} features</div>
             </div>
             <div className="panel-sub">model: RF v1.2</div>
           </div>
@@ -108,16 +111,16 @@ export default function CaseDetail() {
           <div className="panel-head">
             <div>
               <div className="panel-title">Cardholder</div>
-              <div className="panel-sub">**** **** **** 4821</div>
+              <div className="panel-sub">**** **** **** {cd.cardLast4}</div>
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <KV l="Holder"     v="M. Chen" />
-            <KV l="Issued"     v="2021 · 4.2y" mono />
-            <KV l="Home"       v="Seattle, WA" mono />
-            <KV l="Avg ticket" v="$42.18" mono />
+            <KV l="Holder"     v={cd.cardholderName} />
+            <KV l="Issued"     v={`${cd.cardIssuedYear} · ${cd.cardAgeYears}y`} mono />
+            <KV l="Home"       v={cd.cardholderCity} mono />
+            <KV l="Avg ticket" v={cd.cardholderAvgTicketFull} mono />
             <KV l="Last fraud" v="Never" mono color="var(--safe)" />
-            <KV l="Tenure"     v="7 yrs" mono />
+            <KV l="Tenure"     v={`${cd.cardholderTenureYears} yrs`} mono />
           </div>
         </div>
 
@@ -128,10 +131,10 @@ export default function CaseDetail() {
             <div className="panel-sub">automated &amp; analyst events</div>
           </div>
           {[
-            { t: '14:22:08', kind: 'alert',  m: <><b style={{ color: 'var(--fg)' }}>Fraud verdict</b> · TX-49281 declined at +38 ms (RF v1.2, p=0.982).</> },
+            { t: '14:22:08', kind: 'alert',  m: <><b style={{ color: 'var(--fg)' }}>Fraud verdict</b> · {cd.transactionId} declined at +{cd.verdictLatencyMs} ms (RF v1.2, {cd.fraudModelProbDisplay}).</> },
             { t: '14:22:09', kind: '',       m: <>Cardholder notified via push &amp; SMS. Auto-temporary-hold placed.</> },
-            { t: '14:22:10', kind: '',       m: <>Case <b style={{ color: 'var(--fg)' }}>C-7714</b> created · routed to Tier-2 / S. Marlowe.</> },
-            { t: '14:24:42', kind: 'action', m: <><b style={{ color: 'var(--fg)' }}>S. Marlowe</b> opened case.</> },
+            { t: '14:22:10', kind: '',       m: <>Case <b style={{ color: 'var(--fg)' }}>{cd.caseId}</b> created · routed to Tier-2 / {cd.analystName}.</> },
+            { t: '14:24:42', kind: 'action', m: <><b style={{ color: 'var(--fg)' }}>{cd.analystName}</b> opened case.</> },
             { t: '— now —', kind: '',        m: <span style={{ color: 'var(--fg)' }}>Awaiting analyst decision.</span> },
           ].map((row, i) => (
             <div key={i} style={{
@@ -165,7 +168,7 @@ export default function CaseDetail() {
         alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div style={{ fontSize: 13, color: 'var(--fg-2)' }}>
-          Resolve case <b style={{ color: 'var(--fg)' }}>C-7714</b>. The cardholder will be notified; the model will incorporate your label in the next training cycle.
+          Resolve case <b style={{ color: 'var(--fg)' }}>{cd.caseId}</b>. The cardholder will be notified; the model will incorporate your label in the next training cycle.
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn ghost">Escalate to Tier 3</button>

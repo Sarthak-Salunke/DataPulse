@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { getAuthToken } from '../../hooks/useApiData';
 import DataTable from './DataTable';
 import ChartRenderer from './ChartRenderer';
+import { APP_METRICS } from '../../config/content';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -239,7 +240,7 @@ export default function FraudChatPanel() {
     } catch (err) {
       const errorMsg: AssistantMessage = {
         role: 'assistant',
-        summary: err instanceof Error ? err.message : 'Something went wrong. Please try again.',
+        summary: err instanceof Error ? err.message : 'Query failed. The analysis engine returned an error — rephrase your question or retry.',
       };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
@@ -343,7 +344,7 @@ export default function FraudChatPanel() {
               color: 'var(--fg)',
             }}
           >
-            Ask anything about fraud data
+            Query your fraud data in plain language.
           </div>
         </div>
 
@@ -371,13 +372,13 @@ export default function FraudChatPanel() {
               }}
             >
               <div style={{ fontSize: '24px', marginBottom: '12px' }}>◈</div>
-              Try asking:
+              Example queries:
               <br />
               "Which merchant has the highest fraud rate today?"
               <br />
               "Compare fraud volume this week vs last week"
               <br />
-              "Show high value frauds above $500 in the last hour"
+              {`Show high value frauds above $${APP_METRICS.chat.highValueFraudThreshold} in the last hour`}
             </div>
           )}
 
@@ -454,7 +455,7 @@ export default function FraudChatPanel() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about fraud data…"
+            placeholder="e.g. Which merchants had the highest fraud rate this week?"
             disabled={loading}
             style={{
               flex: 1,

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useReveal } from '../../hooks/useReveal';
+import { APP_METRICS } from '../../config/content';
 
 interface PipelineNode {
   id: string;
@@ -217,10 +218,10 @@ const ArchitectureDiagram: React.FC = () => {
         {/* Latency callout */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', marginTop: '32px', flexWrap: 'wrap' }}>
           {[
-            { label: 'Kafka Throughput', value: '23K msg/s' },
-            { label: 'Spark Batch', value: '2s' },
-            { label: 'End-to-End', value: '<20s' },
-            { label: 'Model Accuracy', value: '94.35%' },
+            { label: 'Kafka Throughput', value: APP_METRICS.architecture.kafkaThroughput },
+            { label: 'Spark Batch',      value: APP_METRICS.architecture.sparkBatchInterval },
+            { label: 'End-to-End',       value: APP_METRICS.architecture.endToEndLatency },
+            { label: 'Model Accuracy',   value: APP_METRICS.architecture.modelAccuracyDisplay },
           ].map(({ label, value }) => (
             <div key={label} style={{ textAlign: 'center' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '20px', fontWeight: 500, color: 'var(--cyan)', letterSpacing: '-0.01em' }}>{value}</div>

@@ -6,6 +6,7 @@ import { useTransactions, useDashboardMetrics, useRecentAlerts } from '../../hoo
 import type { FraudAlert, Transaction } from '../../types';
 import { useCountUp } from '../../hooks/useCountUp';
 import RealTimeFeed from './RealTimeFeed';
+import { APP_METRICS } from '../../config/content';
 
 // CSS vars don't work in SVG/Recharts props — use hex constants
 const C = {
@@ -147,10 +148,10 @@ export default function Dashboard() {
   const { metrics }      = useDashboardMetrics();
   const { alerts }       = useRecentAlerts(8);
 
-  const rawTotal  = metrics?.totalTransactions ?? 23400;
-  const rawFraud  = metrics?.fraudDetected     ?? 47;
-  const rawRate   = metrics?.fraudRate         ?? 0.42;
-  const rawAcc    = metrics?.accuracy          ?? 94.3;
+  const rawTotal  = metrics?.totalTransactions ?? APP_METRICS.dashboard.defaultTotalTransactions;
+  const rawFraud  = metrics?.fraudDetected     ?? APP_METRICS.dashboard.defaultFraudDetected;
+  const rawRate   = metrics?.fraudRate         ?? APP_METRICS.dashboard.defaultFraudRatePct;
+  const rawAcc    = metrics?.accuracy          ?? APP_METRICS.dashboard.defaultModelAccuracyPct;
 
   const txTotal    = useCountUp(rawTotal,  1800, 0);
   const fraudCount = useCountUp(rawFraud,  1400, 0);
@@ -174,14 +175,14 @@ export default function Dashboard() {
         {/* Total transactions */}
         <div className="panel" style={{ padding: '20px 22px' }}>
           <div className="panel-sub" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
-            Total transactions
+            Transactions processed
           </div>
           <div style={{ fontSize: 34, fontWeight: 500, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
             {Math.round(txTotal).toLocaleString()}
           </div>
           <div style={{ marginTop: 8, fontFamily: 'var(--mono)', fontSize: 11 }}>
             <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 10, color: 'var(--safe)', background: 'var(--safe-soft)' }}>
-              ↑ {Math.round(rawTotal / 1440)}/min avg
+              ↑ {Math.round(rawTotal / 1440)} tx / min · 24h avg
             </span>
           </div>
         </div>
@@ -189,14 +190,14 @@ export default function Dashboard() {
         {/* Fraud detected */}
         <div className="panel" style={{ padding: '20px 22px', borderColor: 'var(--risk)' }}>
           <div className="panel-sub" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
-            Fraud detected
+            Cases flagged
           </div>
           <div style={{ fontSize: 34, fontWeight: 500, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1, color: 'var(--risk)' }}>
             {Math.round(fraudCount)}
           </div>
           <div style={{ marginTop: 8, fontFamily: 'var(--mono)', fontSize: 11 }}>
             <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 10, color: 'var(--risk)', background: 'var(--risk-soft)' }}>
-              +{Math.round(rawFraud * 0.2)} last hour
+              ↑ +{Math.round(rawFraud * 0.2)} new cases · last 60 min
             </span>
           </div>
         </div>
@@ -212,7 +213,7 @@ export default function Dashboard() {
           </div>
           <div style={{ marginTop: 8, fontFamily: 'var(--mono)', fontSize: 11 }}>
             <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 10, color: 'var(--risk)', background: 'var(--risk-soft)' }}>
-              ↑ +0.08 pp vs prior hour
+              ↑ {APP_METRICS.dashboard.fraudRateDeltaLabel}
             </span>
           </div>
           {/* Sparkline */}
@@ -245,7 +246,7 @@ export default function Dashboard() {
         <div className="panel" style={{ padding: '20px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div className="panel-sub" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
-              Model accuracy
+              Detection precision
             </div>
             <div style={{ fontSize: 34, fontWeight: 500, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
               {accuracy.toFixed(1)}
@@ -253,7 +254,7 @@ export default function Dashboard() {
             </div>
             <div style={{ marginTop: 8, fontFamily: 'var(--mono)', fontSize: 11 }}>
               <span style={{ padding: '2px 7px', borderRadius: 3, fontSize: 10, color: 'var(--safe)', background: 'var(--safe-soft)' }}>
-                precision · recall 92.0%
+                Recall: {APP_METRICS.dashboard.displayRecallPct}%
               </span>
             </div>
           </div>
@@ -269,8 +270,8 @@ export default function Dashboard() {
         <div className="panel" style={{ gridColumn: 'span 8' }}>
           <div className="panel-head">
             <div>
-              <div className="panel-title">Transaction volume <em>vs. flagged events</em></div>
-              <div className="panel-sub">past 24 hours · hourly buckets</div>
+              <div className="panel-title">Transaction volume <em>· fraud event overlay</em></div>
+              <div className="panel-sub">Rolling 24-hour window · hourly resolution</div>
             </div>
             <div style={{ display: 'flex', gap: 16, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-2)' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -314,12 +315,12 @@ export default function Dashboard() {
         {/* Fraud alerts */}
         <div className="panel" style={{ gridColumn: 'span 4' }}>
           <div className="panel-head">
-            <div className="panel-title">Fraud alerts <em>· live</em></div>
+            <div className="panel-title">Active fraud cases <em>· live</em></div>
             <span className="pill"><span className="live-dot"/>LIVE</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 292, overflowY: 'auto' }}>
             {alerts.length === 0
-              ? <div style={{ color: 'var(--fg-3)', fontFamily: 'var(--mono)', fontSize: 12, padding: '8px 0' }}>No active alerts</div>
+              ? <div style={{ color: 'var(--fg-3)', fontFamily: 'var(--mono)', fontSize: 12, padding: '8px 0' }}>No fraud activity detected in this window.</div>
               : alerts.map((a, i) => <AlertCard key={a.transNum ?? a.transaction_id ?? i} a={a}/>)
             }
           </div>
@@ -338,8 +339,8 @@ export default function Dashboard() {
         {/* Category distribution */}
         <div className="panel" style={{ gridColumn: 'span 4' }}>
           <div className="panel-head">
-            <div className="panel-title">Top categories</div>
-            <div className="panel-sub">by transaction volume</div>
+            <div className="panel-title">Category exposure</div>
+            <div className="panel-sub">by share of total transaction volume</div>
           </div>
           {catRows.map((cat, i) => (
             <div key={i} style={{
@@ -366,8 +367,8 @@ export default function Dashboard() {
       <div className="panel reveal" data-d="4">
         <div className="panel-head">
           <div>
-            <div className="panel-title">Risk heatmap <em>· hour × day</em></div>
-            <div className="panel-sub">fraud event density by weekday and hour of day</div>
+            <div className="panel-title">Fraud density heatmap <em>· hour × weekday</em></div>
+            <div className="panel-sub">Relative fraud event concentration · 7-day rolling baseline</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
